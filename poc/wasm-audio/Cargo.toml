@@ -1,0 +1,32 @@
+[package]
+name = "poc-wasm-audio"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen          = "0.2"
+wasm-bindgen-futures  = "0.4"
+js-sys                = "0.3"
+web-sys = { version = "0.3", features = [
+    # DOM
+    "Window",
+    "Document",
+    "Element",
+    "Node",
+    "HtmlButtonElement",
+    "EventTarget",
+    # Web Audio
+    "AudioContext",
+    "BaseAudioContext",
+    "AudioWorklet",
+    "AudioWorkletNode",
+    "AudioDestinationNode",
+    "AudioNode",
+    # Blob / URL (for inline AudioWorklet processor script)
+    "Blob",
+    "BlobPropertyBag",
+    "Url",
+] }

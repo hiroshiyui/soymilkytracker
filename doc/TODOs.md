@@ -13,7 +13,8 @@
 - [x] Choose database → **PostgreSQL** + local filesystem storage (self-hosted friendly)
 - [x] Decide on compile targets → **Web (WASM) + Native Desktop** from a single codebase
 - [x] Choose audio I/O strategy → `AudioBackend` trait: Web Audio `AudioWorklet` on WASM, `cpal` on native
-- [ ] Proof-of-concept spike: Rust WASM `AudioWorklet` producing sound in-browser
+- [x] Proof-of-concept spike: Rust WASM `AudioWorklet` producing sound in-browser
+  - See `poc/wasm-audio/` — build with `trunk serve` from that directory
 - [ ] Proof-of-concept spike: `cpal` producing sound on native desktop
 - [ ] Proof-of-concept spike: `egui`/`eframe` rendering a tracker grid cell at pixel-art scale (web + native)
 - [ ] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)

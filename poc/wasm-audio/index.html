@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PoC — WASM AudioWorklet</title>
+    <!-- Trunk compiles the Rust crate, injects the WASM module loader, and serves the page. -->
+    <link data-trunk rel="rust" data-wasm-opt="0" />
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 600px;
+            margin: 4rem auto;
+            padding: 0 1rem;
+            background: #1a1a1a;
+            color: #d4d4d4;
+        }
+        h2  { color: #e8c46a; }
+        code { background: #2a2a2a; padding: 0.1em 0.3em; border-radius: 2px; }
+        button {
+            font-family: monospace;
+            font-size: 1rem;
+            padding: 0.5rem 1.2rem;
+            background: #2a5a2a;
+            color: #9de89d;
+            border: 1px solid #4a9a4a;
+            cursor: pointer;
+        }
+        button:hover { background: #3a7a3a; }
+        #status { color: #9de89d; }
+        hr  { border-color: #333; }
+        small { color: #888; }
+    </style>
+</head>
+<body>
+    <h2>PoC: Rust WASM → Web Audio <code>AudioWorklet</code></h2>
+    <p>
+        Proof-of-concept spike for SoymilkyTracker.<br />
+        Rust/WASM creates an <code>AudioContext</code>, loads a
+        <code>SineProcessor</code> as an <code>AudioWorkletNode</code>,
+        and connects it to the audio output.
+    </p>
+
+    <p><button id="start-btn">▶ Start audio</button></p>
+    <p>Status: <span id="status">idle — click to start (browser requires a user gesture)</span></p>
+
+    <hr />
+    <p><small>
+        The <code>SineProcessor</code> runs in the browser's dedicated audio thread.<br />
+        In the full app, this processor will be replaced by a WASM module running
+        the tracker engine (<code>fundsp</code> DSP + <code>oxisynth</code>),
+        driven from the main thread via <code>MessagePort</code>.
+    </small></p>
+</body>
+</html>

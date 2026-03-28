@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+exclude = ["poc"]
 members = [
     "crates/tracker-types",
     "crates/tracker-engine",
