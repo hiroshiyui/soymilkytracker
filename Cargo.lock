@@ -4755,8 +4755,10 @@ dependencies = [
  "fundsp",
  "js-sys",
  "oxisynth",
+ "tracing",
  "tracker-types",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
 ]
 

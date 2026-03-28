@@ -24,9 +24,11 @@ pub fn wasm_main() {
             .unwrap();
 
         eframe::WebRunner::new()
-            .start(canvas, web_options, Box::new(|cc| {
-                Ok(Box::new(app::TrackerApp::new(cc)))
-            }))
+            .start(
+                canvas,
+                web_options,
+                Box::new(|cc| Ok(Box::new(app::TrackerApp::new(cc)))),
+            )
             .await
             .unwrap();
     });
