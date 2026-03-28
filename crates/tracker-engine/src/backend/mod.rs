@@ -37,4 +37,13 @@ pub trait AudioBackend {
 
     /// Stop audio output and release audio resources.
     fn stop(&mut self);
+
+    /// The sample rate (Hz) that this backend will use.
+    ///
+    /// On native this queries the default output device without opening a
+    /// stream.  Falls back to 44 100 if the device cannot be queried.
+    /// On WASM, 44 100 is returned as a safe default (browsers are typically
+    /// 44 100 or 48 000; the true rate is only known after `AudioContext`
+    /// creation, which happens asynchronously inside `start`).
+    fn preferred_sample_rate(&self) -> u32;
 }

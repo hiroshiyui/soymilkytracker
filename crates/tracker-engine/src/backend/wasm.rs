@@ -155,6 +155,12 @@ impl AudioBackend for WasmAudioBackend {
             }
         });
     }
+
+    fn preferred_sample_rate(&self) -> u32 {
+        // The true AudioContext sample rate is only known after async setup.
+        // 44 100 is the most common browser default and a safe initialiser.
+        44_100
+    }
 }
 
 // ---------------------------------------------------------------------------

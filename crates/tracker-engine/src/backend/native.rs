@@ -56,6 +56,14 @@ impl AudioBackend for NativeAudioBackend {
         // Dropping the Stream pauses playback and releases the device.
         self.stream = None;
     }
+
+    fn preferred_sample_rate(&self) -> u32 {
+        cpal::default_host()
+            .default_output_device()
+            .and_then(|d| d.default_output_config().ok())
+            .map(|c| c.sample_rate().0)
+            .unwrap_or(44_100)
+    }
 }
 
 fn build_stream<T>(
