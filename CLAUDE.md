@@ -25,6 +25,12 @@ The audio engine logic (DSP, mixing, synthesis) is shared. Only the I/O layer di
 
 Use `#[cfg(target_arch = "wasm32")]` to gate platform-specific code.
 
+`FillCallback` is cfg-gated: `Box<dyn FnMut(&mut [f32]) + Send + 'static>` on native (audio runs on a cpal thread); `Box<dyn FnMut(&mut [f32]) + 'static>` on WASM (single-threaded, no `Send` required).
+
+**Key modules in `tracker-engine`:**
+- `backend::NativeAudioBackend` / `WasmAudioBackend` — platform I/O
+- `xm` — XM module file parser (FastTracker II format, v0x0104/0x0103)
+
 ### Backend
 - **Framework**: Rust + [`axum`](https://github.com/tokio-rs/axum)
 - **Database**: PostgreSQL (user data, composition metadata, playlists)
@@ -36,9 +42,14 @@ Use `#[cfg(target_arch = "wasm32")]` to gate platform-specific code.
 ```
 crates/
   tracker-types/    # Shared data types (API DTOs, composition format) — no I/O, no async
-  tracker-engine/   # Audio DSP, synthesis, AudioBackend trait — compiles to WASM + native
+  tracker-engine/   # Audio DSP, synthesis, AudioBackend trait, XM parser — compiles to WASM + native
   tracker-client/   # egui/eframe UI — compiles to WASM + native desktop
   tracker-server/   # Axum HTTP server — native only
+assets/
+  soundfonts/
+    TimGM6mb.sf2              # General MIDI, GPL-2.0+ (bundled default instrument set)
+    Open8bitVChiptuner.sf2    # Chiptune / 8-bit style, CC BY-SA 4.0
+    ATTRIBUTION               # License and attribution for all vendored soundfonts
 ```
 
 Dependency graph: `tracker-types` ← `tracker-engine` ← `tracker-client`; `tracker-types` ← `tracker-server`.
@@ -51,7 +62,7 @@ The `doc/` directory contains the product vision:
 
 The application has two main layers:
 
-1. **Client**: Single Rust codebase targeting both WASM (web) and native desktop. On WASM, the audio engine runs in a Web Audio `AudioWorklet` thread; the `egui`/`eframe` UI runs in the main WASM thread, communicating via `SharedArrayBuffer` / message passing. On native, `cpal` drives audio I/O directly. The server connection is optional for native — the app can operate fully offline.
+1. **Client**: Single Rust codebase targeting both WASM (web) and native desktop. On WASM, the `egui`/`eframe` UI and audio fill logic both run on the main WASM thread. Audio samples are pre-rendered via a `requestAnimationFrame` loop, then posted as `Float32Array` chunks to a `TrackerProcessor` `AudioWorklet` via `MessagePort`. On native, `cpal` drives audio I/O directly via a `FillCallback`. The server connection is optional for native — the app can operate fully offline.
 2. **Server**: Rust/Axum REST API backed by PostgreSQL and local filesystem storage. Stores user compositions and profiles; serves published works and playlists. Designed for self-hosted, single server instance deployment.
 
 ## Build & Development Commands
