@@ -34,6 +34,14 @@ A music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTra
 | File storage | Local filesystem (self-hosted friendly) |
 | Auth | JWT / OAuth (GitHub, Google) |
 
+## Development Prerequisites
+
+| Tool | Purpose | Install |
+|---|---|---|
+| Rust (stable) | Compiler | [rustup.rs](https://rustup.rs) — toolchain pinned via `rust-toolchain.toml` |
+| `wasm32-unknown-unknown` | WASM compile target | Auto-installed by `rustup` from `rust-toolchain.toml` |
+| [`trunk`](https://trunkrs.dev) | WASM web build & dev server | `cargo install trunk` |
+
 ## Project Status
 
 The technology stack has been finalized and implementation is about to begin. There is no working software yet. Contributions and feedback are welcome, but expect significant breaking changes at any stage.
