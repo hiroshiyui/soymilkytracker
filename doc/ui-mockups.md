@@ -56,25 +56,26 @@ In egui these map directly to `egui::Color32::from_rgb(R, G, B)`.
 
 ## 2. Typography
 
-MilkyTracker uses exclusively custom **1-bit bitmap fonts** — no OS font.
+SoymilkyTracker uses a single vendored bitmap font for all UI text.
 All text is rendered at pixel-exact positions with no anti-aliasing.
 
-| Font ID | Size | Usage |
-|---|---|---|
-| FONT_TINY | 6 × 5 px | Tiny labels, minimal buttons |
-| **FONT_SYSTEM (ARIEL)** | **8 × 8 px** | **Default — pattern editor, lists, everything** |
-| FONT_LARGE (ATHENA) | 12 × 12 px | Optional large display |
-| FONT_HUGE | 16 × 16 px | Optional huge display |
+| Role | Font | Size | File |
+|---|---|---|---|
+| **Primary UI — everything** | **IBM EGA 8×8 (Ac437)** | **8 × 8 px** | `assets/fonts/Ac437_IBM_EGA_8x8.ttf` |
 
-For SoymilkyTracker: embed the ARIEL 8×8 bitmap font (256 glyphs × 8 bytes,
-stored as packed bits in MilkyTracker's source under `src/tracker/Font.cpp`).
-Render via `egui::Painter::text` with `FontId` configured to use a
-monospace bitmap font at 8 px, or paint glyphs manually via `painter.rect` /
-`painter.image`.
+**IBM EGA 8×8** is a pixel-perfect TTF reproduction of the IBM PC EGA BIOS
+ROM font, taken from the *Ultimate Oldschool PC Font Pack v2.2* by VileR
+(CC BY 4.0, `https://int10h.org/oldschool-pc-fonts/`).  It covers IBM Code
+Page 437 (Latin + box-drawing + block-element glyphs) — sufficient for all
+tracker UI text.  The font is registered in egui under the family name
+`"tracker"` (see `install_fonts()` in `crates/tracker-client/src/app.rs`).
 
-**Empty-cell placeholder:** MilkyTracker uses glyph `0xF4` (a custom dot/dash
-symbol).  Render as `·` (U+00B7 MIDDLE DOT) or a 1×3 px filled rect centred
-in the cell.
+Sizing convention: egui `FontId::new(8.0, FontFamily::Name("tracker".into()))`.
+At native (1×) scale this gives 8 px tall glyphs matching the 8-px row height
+used in all column layout calculations below.
+
+**Empty-cell placeholder:** render as `·` (U+00B7 MIDDLE DOT) in colour
+`#404040`, or a 1×3 px filled rect centred in the cell.
 
 ---
 
@@ -255,7 +256,7 @@ not separate windows.
 This is the core of the application.  It fills the remaining vertical space
 (~284 px at 800×600, showing ~35 rows at 8-px font).
 
-### 9a. Column Layout (per channel, at FONT_SYSTEM 8×8)
+### 9a. Column Layout (per channel, at IBM EGA 8×8)
 
 ```
 Slot width = 10 × 8 + 7 = 87 px per channel
@@ -410,11 +411,19 @@ painter.text(pos, Align2::LEFT_TOP, "C-4", font_id, Color32::WHITE);
 ```
 
 ### Font
-Embed the ARIEL 8×8 bitmap font from MilkyTracker source
-(`src/tracker/font/*.cpp`) as a `Vec<u8>` and register it with
-`egui::FontDefinitions` as a custom font family `"tracker"`.
-Alternatively, use `egui`'s built-in monospace at size 13.0 (closest to
-8×8 visual density) as a placeholder until the bitmap font is integrated.
+The IBM EGA 8×8 font is already vendored and wired up.  Use it via:
+
+```rust
+use egui::{FontFamily, FontId};
+
+let font_id = FontId::new(8.0, FontFamily::Name("tracker".into()));
+```
+
+`install_fonts()` in `crates/tracker-client/src/app.rs` registers the font
+under the `"tracker"` family name (constant `FONT_TRACKER`) and sets it as
+the default for both Proportional and Monospace families, so standard egui
+widgets pick it up automatically.  Call `install_fonts(&cc.egui_ctx)` once
+in `TrackerApp::new`; it is already called there.
 
 ### Pattern grid scroll
 Use `egui::ScrollArea::both()` wrapping the cell grid; disable egui's
