@@ -1,0 +1,19 @@
+Fonts vendored in this directory
+=================================
+
+Ac437_IBM_EGA_8x8.ttf
+----------------------
+Name:     IBM EGA 8×8 (accurate/Ac437 variant)
+Pack:     The Ultimate Oldschool PC Font Pack v2.2
+Author:   VileR <viler@int10h.org>
+Source:   https://int10h.org/oldschool-pc-fonts/
+License:  Creative Commons Attribution 4.0 International (CC BY 4.0)
+          https://creativecommons.org/licenses/by/4.0/
+SHA-256:  724a72213d013b49656ca10faa641bdac7d6c06dca53ca1e1147183224f02332
+
+This is a pixel-perfect TTF reproduction of the IBM PC EGA 8×8 BIOS ROM
+font, used here as the primary UI typeface to achieve the classic DOS
+tracker aesthetic. The "Ac437" prefix denotes the accurate (unmodified)
+glyph reproduction in IBM Code Page 437 encoding.
+
+Attribution requirement: include the above author credit when distributing.
