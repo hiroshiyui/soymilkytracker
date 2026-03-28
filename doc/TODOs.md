@@ -17,7 +17,7 @@
 - [ ] Proof-of-concept spike: `cpal` producing sound on native desktop
 - [ ] Proof-of-concept spike: `egui`/`eframe` rendering a tracker grid cell at pixel-art scale (web + native)
 - [ ] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)
-- [ ] Set up repository structure (client / server / shared crates)
+- [x] Set up repository structure → Cargo workspace with `tracker-types`, `tracker-engine`, `tracker-client`, `tracker-server`
 - [ ] Configure build toolchain: `cargo` for native, `wasm-pack` / `trunk` for WASM web
 - [ ] Set up CI pipeline (build + test for both targets)
 - [ ] Update CLAUDE.md with build commands once toolchain is configured

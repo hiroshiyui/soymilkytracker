@@ -1,0 +1,33 @@
+[package]
+name = "tracker-server"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[[bin]]
+name = "tracker-server"
+path = "src/main.rs"
+
+[dependencies]
+tracker-types = { path = "../tracker-types" }
+anyhow         = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+tokio          = { workspace = true }
+tracing        = { workspace = true }
+uuid           = { workspace = true }
+chrono         = { workspace = true }
+axum           = { version = "0.8", features = ["macros"] }
+tower          = "0.5"
+tower-http     = { version = "0.6", features = ["fs", "cors", "trace"] }
+sqlx           = { version = "0.8", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "uuid",
+    "chrono",
+    "json",
+] }
+jsonwebtoken   = "9"
+reqwest        = { workspace = true }
+dotenvy        = "0.15"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

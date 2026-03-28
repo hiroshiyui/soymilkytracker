@@ -1,0 +1,36 @@
+[package]
+name = "tracker-client"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+# cdylib: required by wasm-bindgen to produce the .wasm module.
+# rlib:   required for integration tests and native binary linkage.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "tracker-client"
+path = "src/main.rs"
+
+[dependencies]
+tracker-types  = { path = "../tracker-types" }
+tracker-engine = { path = "../tracker-engine" }
+anyhow  = { workspace = true }
+egui    = "0.29"
+eframe  = { version = "0.29", default-features = false, features = [
+    "accesskit",
+    "default_fonts",
+    "glow",
+    "persistence",
+] }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen          = "0.2"
+wasm-bindgen-futures  = "0.4"
+web-sys = { version = "0.3", features = ["Window"] }

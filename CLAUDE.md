@@ -31,12 +31,21 @@ Use `#[cfg(target_arch = "wasm32")]` to gate platform-specific code.
 - **File storage**: Local filesystem — designed for self-hosted, single server instance deployment (no object storage dependency). Serve files via `tower-http`'s `ServeDir`. Deployment docs should cover backup strategy for the storage directory.
 - **Auth**: JWT or session-based; OAuth (GitHub/Google) for social login
 
-## Project Status
+## Repository Structure
 
-This is a greenfield project — no source code exists yet. The `doc/` directory contains the product vision:
+```
+crates/
+  tracker-types/    # Shared data types (API DTOs, composition format) — no I/O, no async
+  tracker-engine/   # Audio DSP, synthesis, AudioBackend trait — compiles to WASM + native
+  tracker-client/   # egui/eframe UI — compiles to WASM + native desktop
+  tracker-server/   # Axum HTTP server — native only
+```
 
-- `doc/product_design.md` — feature list, technology stack discussion, UI/UX guidelines
-- `doc/TODOs.md` — task tracking (currently empty)
+Dependency graph: `tracker-types` ← `tracker-engine` ← `tracker-client`; `tracker-types` ← `tracker-server`.
+
+The `doc/` directory contains the product vision:
+- `doc/product_design.md` — feature list, technology stack, UI/UX guidelines
+- `doc/TODOs.md` — phased task list
 
 ## Architecture Intent
 
