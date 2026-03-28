@@ -4,5 +4,6 @@
 pub mod backend;
 pub mod dsp;
 pub mod synth;
+pub mod xm;
 
 pub use backend::AudioBackend;

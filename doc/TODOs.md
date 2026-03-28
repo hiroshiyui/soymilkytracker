@@ -31,7 +31,7 @@
 ## Phase 1 — Core Audio Engine
 
 - [x] Research and select audio I/O backends → Web Audio `AudioWorklet` (WASM) + `cpal` (native)
-- [ ] Define `AudioBackend` trait and implement for both targets
+- [x] Define `AudioBackend` trait and implement for both targets
   - `WasmAudioBackend` — Web Audio `AudioWorklet` via `wasm-bindgen`
   - `NativeAudioBackend` — `cpal`
 - [ ] Implement XM module file parser (primary format, as used by MilkyTracker)
