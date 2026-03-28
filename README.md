@@ -38,6 +38,10 @@ A web-based music tracker inspired by [MilkyTracker](https://milkytracker.org/) 
 
 The technology stack has been finalized and implementation is about to begin. There is no working software yet. See [`doc/TODOs.md`](doc/TODOs.md) for the phased task list.
 
+## Naming Origin
+
+The author is lactose intolerant, so he chose a name that suits him, paying homage to and parodying MilkyTracker.
+
 ## License
 
 Copyright 2026 HUIHONG YOU
