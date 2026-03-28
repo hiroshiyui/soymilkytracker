@@ -34,7 +34,9 @@ A web-based music tracker inspired by [MilkyTracker](https://milkytracker.org/) 
 
 ## Project Status
 
-Early development — technology stack finalized, implementation not yet started. See [`doc/TODOs.md`](doc/TODOs.md) for the phased task list.
+> **Work in progress — not ready for use.**
+
+The technology stack has been finalized and implementation is about to begin. There is no working software yet. See [`doc/TODOs.md`](doc/TODOs.md) for the phased task list.
 
 ## License
 
