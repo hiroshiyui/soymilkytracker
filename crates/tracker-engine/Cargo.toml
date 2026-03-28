@@ -9,7 +9,7 @@ tracker-types = { path = "../tracker-types" }
 anyhow  = { workspace = true }
 tracing = { workspace = true }
 fundsp  = "0.19"
-oxisynth = "0.1"
+oxisynth = { version = "0.1", features = ["sf3"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cpal = "0.15"

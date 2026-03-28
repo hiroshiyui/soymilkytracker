@@ -27,3 +27,27 @@ SHA-256:    BB63C7AC843AC57B4AE3998148E933F74AB48AECA6A0ED90D2F36984A364D7CA
 The SF2 file and any derivatives must remain under CC BY-SA 4.0.
 This license applies to the soundfont asset only, not to the surrounding
 project code (GPL-3.0-or-later).
+
+MuseScore_General.sf3
+=====================
+
+A high-quality (~39 MB) General MIDI soundfont in SF3 (OGG-compressed)
+format. Full 128-instrument GM coverage + Roland GS extensions. Derived
+from FluidR3 with selective improvements. Loaded via oxisynth's `sf3`
+feature (lewton OGG decoder); compatible with both native and WASM targets.
+
+Copyright chain (all MIT):
+  FluidR3 (original)      Frank Wen                Copyright (c) 2000-02, 2008
+  FluidR3Mono conversion  Michael Cowgill           Copyright (c) 2014-17
+  MuseScore adaptation    S. Christian Collins      Copyright (c) 2018-19
+  Temple Blocks sample    Ethan Winer               Copyright (c) 2002
+  Drumline Cymbals        Michael Schorsch          Copyright (c) 2016
+
+License:    MIT (all contributors above)
+Source:     https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/
+Version:    0.2 (2020-07-10)
+SHA-256:    5B85B6C2C61D10B2B91CDDD41EFCCE7B25CD31C8271D511C73AFAFBEF20B6FA3
+
+The full MIT license text is reproduced in MuseScore_General_License.md
+(Frank Wen's COPYING block). The copyright notices of all five contributors
+above must be included in any derivative work.
