@@ -9,3 +9,21 @@ Source:     Distributed with the timgm6mb-soundfont package on Debian/Ubuntu
             https://packages.debian.org/sid/timgm6mb-soundfont
 
 This file is compatible with this project's GPL-3.0-or-later license.
+
+Open8bitVChiptuner.sf2
+======================
+
+A lightweight (~183 KB) chiptune / 8-bit style General MIDI soundfont.
+Does not emulate any specific hardware chip; provides a generic retro
+8-bit sound palette.
+
+Author:     trzyglow
+License:    Creative Commons Attribution-ShareAlike 4.0 International
+            (CC BY-SA 4.0)
+Source:     https://codeberg.org/trzyglow/Open8bitVChiptuner
+Version:    release-1.0
+SHA-256:    BB63C7AC843AC57B4AE3998148E933F74AB48AECA6A0ED90D2F36984A364D7CA
+
+The SF2 file and any derivatives must remain under CC BY-SA 4.0.
+This license applies to the soundfont asset only, not to the surrounding
+project code (GPL-3.0-or-later).
