@@ -26,7 +26,7 @@ The audio engine logic is shared across targets behind an `AudioBackend` trait, 
 
 ## Features
 
-- Built-in Freepats instrument sound library.
+- Built-in soundfonts: TimGM6mb (compact GM), MuseScore General (high-quality GM), and Open8bitVChiptuner (chiptune palette).
 - Allow users to upload and load custom sound font files.
 - User compositions can be saved to a remote server.
 - User compositions can be downloaded.

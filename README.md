@@ -7,7 +7,7 @@ A music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTra
 ## Features
 
 - **Pattern editor** — compose music in the classic tracker grid (XM format primary, MOD legacy support)
-- **Built-in soundset** — [Freepats](http://freepats.zenvoid.org/) General MIDI library included out of the box
+- **Built-in soundset** — [TimGM6mb](https://packages.debian.org/sid/timgm6mb-soundfont) (compact GM, GPL-2.0+) and [MuseScore General](https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/) (high-quality GM, MIT) soundfonts bundled; [Open8bitVChiptuner](https://codeberg.org/trzyglow/Open8bitVChiptuner) chiptune palette included for the retro aesthetic
 - **Custom instruments** — upload and use your own SF2 / WAV soundfonts
 - **Cloud save** — save and download compositions from a remote server
 - **Publishing** — publish works and playlists; share via an embedded WASM player

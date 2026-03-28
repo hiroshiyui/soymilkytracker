@@ -39,8 +39,11 @@
 - [ ] Implement MOD module file parser (legacy compatibility)
 - [ ] Implement channel mixing and sample playback engine
 - [ ] Support basic tracker effects (volume, pitch, arpeggio, portamento, vibrato, etc.)
-- [ ] Integrate Freepats General MIDI instrument library as built-in soundset via `oxisynth`
-  - SF2 assets already vendored: `assets/soundfonts/TimGM6mb.sf2` (GPL-2.0+) and `Open8bitVChiptuner.sf2` (CC BY-SA 4.0)
+- [ ] Integrate bundled soundfonts as the default instrument set via `oxisynth`
+  - `TimGM6mb.sf2` (GPL-2.0+) — compact GM default
+  - `MuseScore_General.sf3` (MIT) — high-quality GM, opt-in / lazy-load
+  - `Open8bitVChiptuner.sf2` (CC BY-SA 4.0) — chiptune palette
+  - All three vendored in `assets/soundfonts/`; oxisynth `sf3` feature already enabled
 - [ ] Expose play / pause / stop / seek controls through the `AudioBackend` trait
 - [ ] Write unit tests for parser and mixing engine
 

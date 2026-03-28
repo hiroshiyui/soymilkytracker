@@ -13,7 +13,7 @@ SoymilkyTracker is a music tracker application inspired by MilkyTracker and ProT
 - **SF2 synthesis**: [`oxisynth`](https://github.com/PolyMeilex/OxiSynth) — pure Rust SF2 player, works on all targets
 - **DSP / audio graph**: [`fundsp`](https://github.com/SamiPerttu/fundsp) — pure Rust, works on all targets
 - **Module format**: XM (Extended Module) as primary; MOD for legacy compatibility
-- **Instruments**: Built-in Freepats sound library (SF2); user-uploadable SF2/WAV files
+- **Instruments**: Three vendored soundfonts in `assets/soundfonts/` — `TimGM6mb.sf2` (compact GM default, GPL-2.0+), `MuseScore_General.sf3` (high-quality GM, MIT, loaded via oxisynth `sf3` feature), `Open8bitVChiptuner.sf2` (chiptune palette, CC BY-SA 4.0); user-uploadable SF2/SF3 files also planned
 
 #### Audio I/O — abstracted per target
 The audio engine logic (DSP, mixing, synthesis) is shared. Only the I/O layer differs per target, behind an `AudioBackend` trait:
