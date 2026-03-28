@@ -95,6 +95,44 @@ struct Channel {
     last_vol_slide: u8,
     /// Last triggered note (1-indexed XM), kept for arpeggio / portamento.
     note: u8,
+
+    // ── Vibrato LFO ───────────────────────────────────────────────────────────
+    vibrato_speed: u8,
+    vibrato_depth: u8,
+    /// Phase: 0–63, advances by `vibrato_speed` each tick.
+    vibrato_phase: u8,
+
+    // ── Tremolo LFO ───────────────────────────────────────────────────────────
+    tremolo_speed: u8,
+    tremolo_depth: u8,
+    tremolo_phase: u8,
+    /// Additive volume offset produced by tremolo; applied in the fill loop.
+    tremolo_offset: f32,
+
+    // ── Timed note events ─────────────────────────────────────────────────────
+    /// ECx: cut note to silence at this tick (0 = not active).
+    note_cut_tick: u8,
+    /// E9x: retrigger period in ticks (0 = not active).
+    retrig_period: u8,
+    retrig_count: u8,
+
+    // ── Pattern loop (E6x) ────────────────────────────────────────────────────
+    /// Row where E60 was last seen (loop start).
+    loop_row: usize,
+    /// Remaining loop iterations; 0 = not in a loop.
+    loop_count: u8,
+
+    // ── Delayed note trigger (EDx) ────────────────────────────────────────────
+    /// Non-zero = note trigger is pending at this tick.
+    note_delay_tick: u8,
+    /// Saved state for the delayed trigger.
+    delay_note: u8,
+    delay_instr: usize,
+    delay_sample: usize,
+    delay_base_vol: f32,
+    delay_panning: f32,
+    delay_pitch: f64,
+    delay_inc: f64,
 }
 
 impl Default for Channel {
@@ -121,6 +159,26 @@ impl Default for Channel {
             last_porta_dn: 0,
             last_vol_slide: 0,
             note: 0,
+            vibrato_speed: 0,
+            vibrato_depth: 0,
+            vibrato_phase: 0,
+            tremolo_speed: 0,
+            tremolo_depth: 0,
+            tremolo_phase: 0,
+            tremolo_offset: 0.0,
+            note_cut_tick: 0,
+            retrig_period: 0,
+            retrig_count: 0,
+            loop_row: 0,
+            loop_count: 0,
+            note_delay_tick: 0,
+            delay_note: 0,
+            delay_instr: 0,
+            delay_sample: 0,
+            delay_base_vol: 1.0,
+            delay_panning: 0.5,
+            delay_pitch: 60.0,
+            delay_inc: 0.0,
         }
     }
 }
@@ -304,7 +362,10 @@ impl Player {
                     ch.active = false;
                 }
 
-                let vol = ch.base_vol * ch.env_vol * ch.fadeout * master;
+                let vol = (ch.base_vol + ch.tremolo_offset).clamp(0.0, 1.0)
+                    * ch.env_vol
+                    * ch.fadeout
+                    * master;
                 l += sv * vol * (1.0 - ch.panning);
                 r += sv * vol * ch.panning;
             }
@@ -373,6 +434,12 @@ impl Player {
             ch.vol_col = cell.volume;
             ch.effect = cell.effect;
             ch.effect_param = cell.effect_param;
+            // Clear timed events from the previous row.
+            ch.note_cut_tick = 0;
+            ch.retrig_period = 0;
+            ch.retrig_count = 0;
+            ch.note_delay_tick = 0;
+            ch.tremolo_offset = 0.0;
         }
 
         // Key-off: release note, let envelope + fadeout play out.
@@ -416,6 +483,9 @@ impl Player {
                     let sample = &instr.samples[sample_idx];
                     let real_pitch =
                         note_to_pitch(note_val, sample.relative_note, sample.finetune);
+                    let default_vol = sample.volume as f32 / 64.0;
+                    let default_pan = sample.panning as f32 / 255.0;
+                    let inc = pitch_to_increment(real_pitch, self.sample_rate);
 
                     if cell.effect == 0x03 {
                         // 3xx — tone portamento: record target but keep current voice.
@@ -425,12 +495,23 @@ impl Player {
                             ch.last_porta_up = cell.effect_param;
                             ch.last_porta_dn = cell.effect_param;
                         }
+                    } else if cell.effect == 0x0E
+                        && (cell.effect_param >> 4) == 0x0D
+                        && (cell.effect_param & 0x0F) > 0
+                    {
+                        // EDx (x > 0) — note delay: save trigger for later.
+                        let delay = cell.effect_param & 0x0F;
+                        let ch = &mut self.channels[ch_idx];
+                        ch.note_delay_tick = delay;
+                        ch.delay_note = note_val;
+                        ch.delay_instr = instr_idx;
+                        ch.delay_sample = sample_idx;
+                        ch.delay_base_vol = default_vol;
+                        ch.delay_panning = default_pan;
+                        ch.delay_pitch = real_pitch;
+                        ch.delay_inc = inc;
                     } else {
                         // Normal note trigger: (re)start the sample from the beginning.
-                        let default_vol = sample.volume as f32 / 64.0;
-                        let default_pan = sample.panning as f32 / 255.0;
-                        let inc = pitch_to_increment(real_pitch, self.sample_rate);
-
                         let ch = &mut self.channels[ch_idx];
                         ch.instrument_idx = instr_idx;
                         ch.sample_idx = sample_idx;
@@ -452,10 +533,38 @@ impl Player {
             }
         }
 
-        // Volume column: 0x10–0x50 → set volume 0–64.
+        // Volume column effects (applied at tick 0).
         let vol_col = cell.volume;
-        if (0x10..=0x50).contains(&vol_col) {
-            self.channels[ch_idx].base_vol = (vol_col - 0x10) as f32 / 64.0;
+        match vol_col {
+            0x10..=0x50 => {
+                // Set volume 0–64.
+                self.channels[ch_idx].base_vol = (vol_col - 0x10) as f32 / 64.0;
+            }
+            0x80..=0x8F => {
+                // Fine volume slide down (once, at row start).
+                let amt = (vol_col & 0x0F) as f32 / 64.0;
+                self.channels[ch_idx].base_vol =
+                    (self.channels[ch_idx].base_vol - amt).max(0.0);
+            }
+            0x90..=0x9F => {
+                // Fine volume slide up (once, at row start).
+                let amt = (vol_col & 0x0F) as f32 / 64.0;
+                self.channels[ch_idx].base_vol =
+                    (self.channels[ch_idx].base_vol + amt).min(1.0);
+            }
+            0xA0..=0xAF => {
+                // Set vibrato speed.
+                self.channels[ch_idx].vibrato_speed = vol_col & 0x0F;
+            }
+            0xB0..=0xBF => {
+                // Set vibrato depth (speed was already set via 0xAx or 4xx).
+                self.channels[ch_idx].vibrato_depth = vol_col & 0x0F;
+            }
+            0xC0..=0xCF => {
+                // Set panning: 0–F → 0.0–1.0.
+                self.channels[ch_idx].panning = (vol_col & 0x0F) as f32 / 15.0;
+            }
+            _ => {}
         }
 
         // Effect actions that apply only on tick 0.
@@ -468,6 +577,38 @@ impl Player {
         let param = self.channels[ch_idx].effect_param;
 
         match effect {
+            0x03 => {
+                // 3xx — tone portamento: memorise speed.
+                if param != 0 {
+                    let ch = &mut self.channels[ch_idx];
+                    ch.last_porta_up = param;
+                    ch.last_porta_dn = param;
+                }
+            }
+            0x04 => {
+                // 4xy — vibrato: memorise speed (high nibble) and depth (low nibble).
+                let ch = &mut self.channels[ch_idx];
+                if param >> 4 != 0 {
+                    ch.vibrato_speed = param >> 4;
+                }
+                if param & 0x0F != 0 {
+                    ch.vibrato_depth = param & 0x0F;
+                }
+            }
+            0x07 => {
+                // 7xy — tremolo: memorise speed and depth.
+                let ch = &mut self.channels[ch_idx];
+                if param >> 4 != 0 {
+                    ch.tremolo_speed = param >> 4;
+                }
+                if param & 0x0F != 0 {
+                    ch.tremolo_depth = param & 0x0F;
+                }
+            }
+            0x08 => {
+                // 8xx — set panning (0–255 → 0.0–1.0).
+                self.channels[ch_idx].panning = param as f32 / 255.0;
+            }
             0x0B => {
                 // Bxx — position jump to order `param`.
                 self.next_order = Some(param as usize);
@@ -496,12 +637,76 @@ impl Player {
                     self.samples_per_tick = calc_samples_per_tick(self.sample_rate, self.bpm);
                 }
             }
-            0x03 => {
-                // 3xx — tone portamento: memorise speed.
-                if param != 0 {
-                    let ch = &mut self.channels[ch_idx];
-                    ch.last_porta_up = param;
-                    ch.last_porta_dn = param;
+            0x0E => {
+                // Exx — extended effects.
+                let sub = param >> 4;
+                let val = param & 0x0F;
+                match sub {
+                    0x1 => {
+                        // E1x — fine portamento up.
+                        let sr = self.sample_rate;
+                        let ch = &mut self.channels[ch_idx];
+                        ch.pitch = (ch.pitch + val as f64 / 16.0).min(120.0);
+                        ch.increment = pitch_to_increment(ch.pitch, sr);
+                    }
+                    0x2 => {
+                        // E2x — fine portamento down.
+                        let sr = self.sample_rate;
+                        let ch = &mut self.channels[ch_idx];
+                        ch.pitch = (ch.pitch - val as f64 / 16.0).max(0.0);
+                        ch.increment = pitch_to_increment(ch.pitch, sr);
+                    }
+                    0x6 => {
+                        // E6x — pattern loop.
+                        if val == 0 {
+                            // E60: set loop start for this channel.
+                            self.channels[ch_idx].loop_row = self.row;
+                        } else {
+                            // E6x (x > 0): loop back x times.
+                            let ch = &mut self.channels[ch_idx];
+                            if ch.loop_count == 0 {
+                                ch.loop_count = val;
+                                self.next_row = Some(ch.loop_row);
+                            } else {
+                                ch.loop_count -= 1;
+                                if ch.loop_count > 0 {
+                                    self.next_row = Some(ch.loop_row);
+                                }
+                            }
+                        }
+                    }
+                    0x8 => {
+                        // E8x — set panning (0–F → 0.0–1.0).
+                        self.channels[ch_idx].panning = val as f32 / 15.0;
+                    }
+                    0x9 => {
+                        // E9x — retrigger every `val` ticks.
+                        if val > 0 {
+                            self.channels[ch_idx].retrig_period = val;
+                            self.channels[ch_idx].retrig_count = 0;
+                        }
+                    }
+                    0xA => {
+                        // EAx — fine volume slide up (once, tick 0).
+                        let amt = val as f32 / 64.0;
+                        self.channels[ch_idx].base_vol =
+                            (self.channels[ch_idx].base_vol + amt).min(1.0);
+                    }
+                    0xB => {
+                        // EBx — fine volume slide down (once, tick 0).
+                        let amt = val as f32 / 64.0;
+                        self.channels[ch_idx].base_vol =
+                            (self.channels[ch_idx].base_vol - amt).max(0.0);
+                    }
+                    0xC => {
+                        // ECx — note cut at tick `val`.
+                        self.channels[ch_idx].note_cut_tick = val;
+                    }
+                    0xD => {
+                        // EDx — note delay: if val == 0, trigger immediately (no delay).
+                        // val > 0 case is handled in trigger_cell; nothing to do here.
+                    }
+                    _ => {}
                 }
             }
             _ => {}
@@ -573,15 +778,110 @@ impl Player {
                 };
                 self.do_tone_portamento(ch_idx, speed);
             }
+            0x04 => {
+                // 4xx — vibrato: oscillate pitch via sine LFO.
+                let sr = self.sample_rate;
+                let ch = &mut self.channels[ch_idx];
+                if param >> 4 != 0 {
+                    ch.vibrato_speed = param >> 4;
+                }
+                if param & 0x0F != 0 {
+                    ch.vibrato_depth = param & 0x0F;
+                }
+                let lfo = vibrato_lfo(ch.vibrato_phase);
+                let delta = lfo * ch.vibrato_depth as f64 / 16.0;
+                // Only the increment is modified; ch.pitch (base) is preserved.
+                ch.increment = pitch_to_increment(ch.pitch + delta, sr);
+                ch.vibrato_phase = ch.vibrato_phase.wrapping_add(ch.vibrato_speed) & 63;
+            }
             0x05 => {
                 // 5xx — tone portamento + volume slide.
                 let porta_speed = self.channels[ch_idx].last_porta_up;
                 self.do_tone_portamento(ch_idx, porta_speed);
                 self.do_vol_slide(ch_idx, param);
             }
+            0x06 => {
+                // 6xx — vibrato + volume slide.
+                {
+                    let sr = self.sample_rate;
+                    let ch = &mut self.channels[ch_idx];
+                    let lfo = vibrato_lfo(ch.vibrato_phase);
+                    let delta = lfo * ch.vibrato_depth as f64 / 16.0;
+                    ch.increment = pitch_to_increment(ch.pitch + delta, sr);
+                    ch.vibrato_phase = ch.vibrato_phase.wrapping_add(ch.vibrato_speed) & 63;
+                }
+                self.do_vol_slide(ch_idx, param);
+            }
+            0x07 => {
+                // 7xx — tremolo: oscillate volume via sine LFO.
+                let ch = &mut self.channels[ch_idx];
+                if param >> 4 != 0 {
+                    ch.tremolo_speed = param >> 4;
+                }
+                if param & 0x0F != 0 {
+                    ch.tremolo_depth = param & 0x0F;
+                }
+                let lfo = vibrato_lfo(ch.tremolo_phase) as f32;
+                ch.tremolo_offset = lfo * ch.tremolo_depth as f32 / 64.0;
+                ch.tremolo_phase = ch.tremolo_phase.wrapping_add(ch.tremolo_speed) & 63;
+            }
             0x0A => {
                 // Axx — volume slide.
                 self.do_vol_slide(ch_idx, param);
+            }
+            0x0E => {
+                // Exx timed events.
+                let sub = param >> 4;
+                let val = param & 0x0F;
+                match sub {
+                    0x9 if val > 0 => {
+                        // E9x — retrigger: restart sample every `val` ticks.
+                        let ch = &mut self.channels[ch_idx];
+                        ch.retrig_count += 1;
+                        if ch.retrig_count >= ch.retrig_period {
+                            ch.retrig_count = 0;
+                            ch.pos = 0.0;
+                            ch.ping_pong_fwd = true;
+                        }
+                    }
+                    0xC => {
+                        // ECx — note cut at tick `val`.
+                        if self.tick == val as u32 {
+                            self.channels[ch_idx].base_vol = 0.0;
+                        }
+                    }
+                    0xD if val > 0 => {
+                        // EDx — fire delayed note trigger.
+                        if self.tick == val as u32 {
+                            let ch = &self.channels[ch_idx];
+                            let instr_idx = ch.delay_instr;
+                            let sample_idx = ch.delay_sample;
+                            let base_vol = ch.delay_base_vol;
+                            let panning = ch.delay_panning;
+                            let pitch = ch.delay_pitch;
+                            let inc = ch.delay_inc;
+                            let note_val = ch.delay_note;
+                            let ch = &mut self.channels[ch_idx];
+                            ch.instrument_idx = instr_idx;
+                            ch.sample_idx = sample_idx;
+                            ch.pos = 0.0;
+                            ch.increment = inc;
+                            ch.active = true;
+                            ch.key_off = false;
+                            ch.ping_pong_fwd = true;
+                            ch.env_vol_tick = 0;
+                            ch.env_vol = 1.0;
+                            ch.fadeout = 1.0;
+                            ch.note = note_val;
+                            ch.pitch = pitch;
+                            ch.target_pitch = pitch;
+                            ch.base_vol = base_vol;
+                            ch.panning = panning;
+                            ch.note_delay_tick = 0;
+                        }
+                    }
+                    _ => {}
+                }
             }
             _ => {}
         }
@@ -872,6 +1172,14 @@ pub fn pitch_to_freq(pitch: f64) -> f64 {
 /// Convert a pitch to the source-sample increment per output frame.
 fn pitch_to_increment(pitch: f64, sample_rate: u32) -> f64 {
     pitch_to_freq(pitch) / sample_rate as f64
+}
+
+/// Sine LFO used by vibrato (4xx/6xx) and tremolo (7xx).
+///
+/// `phase` is 0–63; returns a value in `[-1.0, +1.0]`.
+fn vibrato_lfo(phase: u8) -> f64 {
+    let angle = (phase as f64) * std::f64::consts::TAU / 64.0;
+    angle.sin()
 }
 
 /// Compute samples per tick from BPM.
