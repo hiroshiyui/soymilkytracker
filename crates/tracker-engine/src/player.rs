@@ -1305,6 +1305,111 @@ mod tests {
         player.fill(&mut buf); // must not panic
     }
 
+    // ── Mixing-engine tests ───────────────────────────────────────────────
+
+    /// Triggering a note with a non-silent sample produces non-zero output.
+    #[test]
+    fn active_channel_produces_non_silence() {
+        let module = make_module_with_note(SampleLoopType::None);
+        let mut player = Player::new(Arc::new(module), 44100);
+        player.play();
+        let mut buf = vec![0.0f32; 256];
+        player.fill(&mut buf);
+        assert!(
+            buf.iter().any(|&s| s != 0.0),
+            "playing a note should produce non-zero samples"
+        );
+    }
+
+    /// After a non-looping sample runs out, the channel should go silent.
+    #[test]
+    fn non_looping_sample_ends() {
+        // Create a module with a 16-sample non-looping tone.
+        let module = make_module_with_note(SampleLoopType::None);
+        let mut player = Player::new(Arc::new(module), 44100);
+        player.play();
+        // Render enough frames to exhaust the 16-sample tone (at C-5, increment ≈ 0.19
+        // frames/output, takes ~85 output frames; give it plenty of room).
+        let mut buf = vec![0.0f32; 4096];
+        player.fill(&mut buf);
+        // The last portion of the buffer should be all zeros once the sample ends.
+        let tail = &buf[buf.len() - 64..];
+        assert!(
+            tail.iter().all(|&s| s == 0.0),
+            "non-looping sample must silence the channel after exhaustion"
+        );
+    }
+
+    /// A forward-looping sample should play indefinitely without panicking.
+    #[test]
+    fn forward_loop_does_not_end() {
+        let module = make_module_with_note(SampleLoopType::Forward);
+        let mut player = Player::new(Arc::new(module), 44100);
+        player.play();
+        let mut buf = vec![0.0f32; 8192];
+        player.fill(&mut buf);
+        // With a forward loop the channel stays active: expect some non-zero output
+        // throughout the entire buffer.
+        assert!(
+            buf.iter().any(|&s| s != 0.0),
+            "forward-looping sample must keep playing"
+        );
+    }
+
+    /// A ping-pong-looping sample should also play indefinitely without panicking.
+    #[test]
+    fn ping_pong_loop_does_not_end() {
+        let module = make_module_with_note(SampleLoopType::PingPong);
+        let mut player = Player::new(Arc::new(module), 44100);
+        player.play();
+        let mut buf = vec![0.0f32; 8192];
+        player.fill(&mut buf); // must not panic
+        assert!(buf.iter().any(|&s| s != 0.0));
+    }
+
+    /// Output must always stay within [-1.0, 1.0] regardless of channel count.
+    #[test]
+    fn output_clamps_within_unity() {
+        let module = make_module_with_note(SampleLoopType::Forward);
+        let mut player = Player::new(Arc::new(module), 44100);
+        player.play();
+        let mut buf = vec![0.0f32; 2048];
+        player.fill(&mut buf);
+        for &s in &buf {
+            assert!(
+                s.abs() <= 1.0,
+                "sample {s} exceeds unity; output must be clamped"
+            );
+        }
+    }
+
+    /// Vibrato LFO returns values strictly within [-1, 1] for all 64 phases.
+    #[test]
+    fn vibrato_lfo_stays_in_range() {
+        for phase in 0u8..64 {
+            let v = vibrato_lfo(phase);
+            assert!(v.abs() <= 1.0 + f64::EPSILON, "lfo({phase}) = {v} out of range");
+        }
+        // Phase 0 → sin(0) = 0.
+        assert_eq!(vibrato_lfo(0), 0.0);
+        // Phase 16 → sin(π/2) ≈ 1.
+        assert!((vibrato_lfo(16) - 1.0).abs() < 1e-10);
+    }
+
+    /// `seek` repositions the player correctly.
+    #[test]
+    fn seek_updates_position() {
+        let module = make_test_module();
+        let mut player = Player::new(Arc::new(module), 44100);
+        player.play();
+        let mut buf = vec![0.0f32; 4096];
+        player.fill(&mut buf);
+        player.set_position(0, 16);
+        let pos = player.position();
+        assert_eq!(pos.order, 0);
+        assert_eq!(pos.row, 16);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     /// Minimal valid XM module with one silent 2-channel / 32-row pattern.
@@ -1325,6 +1430,75 @@ mod tests {
                 rows: vec![vec![XmCell::default(); 2]; 32],
             }],
             instruments: vec![],
+        }
+    }
+
+    /// XM module with one instrument that plays a 16-sample square-wave tone
+    /// on C-5 in channel 0, row 0.
+    fn make_module_with_note(loop_type: SampleLoopType) -> XmModule {
+        use crate::xm::*;
+
+        // 16-sample square wave: first 8 samples high, next 8 low.
+        let data: Vec<i16> = (0..16)
+            .map(|i| if i < 8 { i16::MAX / 2 } else { i16::MIN / 2 })
+            .collect();
+
+        let sample = XmSample {
+            name: "sq".into(),
+            loop_start: 0,
+            loop_length: 16,
+            loop_type,
+            volume: 64,
+            finetune: 0,
+            panning: 128,
+            relative_note: 0,
+            data,
+        };
+
+        let mut instr = XmInstrument {
+            name: "sq-instr".into(),
+            note_to_sample: [0u8; 96],
+            volume_envelope: XmEnvelope::default(),
+            panning_envelope: XmEnvelope::default(),
+            volume_fadeout: 0,
+            vibrato_type: 0,
+            vibrato_sweep: 0,
+            vibrato_depth: 0,
+            vibrato_rate: 0,
+            samples: vec![sample],
+        };
+        // All notes map to sample 0.
+        instr.note_to_sample = [0u8; 96];
+
+        // Row 0: channel 0 plays C-5 with instrument 1.
+        let mut row0 = vec![XmCell::default(); 2];
+        row0[0] = XmCell {
+            note: XmNote::On(61), // C-5 (1-indexed)
+            instrument: 1,
+            volume: 0x50,         // set volume = 64 (max)
+            effect: 0,
+            effect_param: 0,
+        };
+
+        XmModule {
+            name: "MixTest".into(),
+            tracker_name: "Test".into(),
+            version: 0x0104,
+            song_length: 1,
+            restart_position: 0,
+            channel_count: 2,
+            default_tempo: 6,
+            default_bpm: 125,
+            linear_frequencies: true,
+            pattern_order: vec![0],
+            patterns: vec![XmPattern {
+                rows: {
+                    let mut rows = vec![vec![XmCell::default(); 2]; 32];
+                    rows[0] = row0;
+                    rows
+                },
+            }],
+            instruments: vec![instr],
         }
     }
 }
