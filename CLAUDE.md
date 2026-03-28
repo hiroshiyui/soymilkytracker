@@ -56,7 +56,53 @@ The application has two main layers:
 
 ## Build & Development Commands
 
-No build system has been set up yet. Update this file when a toolchain is chosen and configured.
+### Prerequisites
+
+```bash
+rustup show          # installs toolchain + wasm32 target from rust-toolchain.toml
+cargo install trunk  # WASM web dev server (install once)
+```
+
+### Native desktop
+
+```bash
+cargo check                    # check all workspace crates
+cargo test --all               # run all tests
+cargo run -p tracker-client    # launch the tracker UI (native window)
+cargo run -p tracker-server    # launch the backend server
+```
+
+### Web (WASM) — via Trunk
+
+```bash
+cd crates/tracker-client
+trunk serve                    # dev server at http://localhost:8080 (hot-reload)
+trunk build --release          # production WASM bundle → dist/
+```
+
+### Linting
+
+```bash
+cargo fmt --all --check                        # check formatting
+cargo clippy --all-targets -- -D warnings      # lint (warnings are errors)
+```
+
+### CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR to `main`:
+- **fmt** — `cargo fmt --all --check`
+- **native** — `cargo clippy --all-targets` + `cargo test --all`
+- **wasm** — `cargo check --target wasm32-unknown-unknown` for `tracker-types`, `tracker-engine`, `tracker-client`
+
+### PoC spikes (standalone — not part of the workspace)
+
+```bash
+# Native
+cargo run                  # in poc/cpal-native/
+
+# Web (WASM)
+trunk serve                # in poc/wasm-audio/, poc/egui-grid/, poc/oxisynth-wasm/
+```
 
 ## License
 

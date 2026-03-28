@@ -22,9 +22,11 @@
 - [x] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)
   - See `poc/oxisynth-wasm/` — `trunk serve` (requires `TimGM6mb.sf2` symlink)
 - [x] Set up repository structure → Cargo workspace with `tracker-types`, `tracker-engine`, `tracker-client`, `tracker-server`
-- [ ] Configure build toolchain: `cargo` for native, `wasm-pack` / `trunk` for WASM web
-- [ ] Set up CI pipeline (build + test for both targets)
-- [ ] Update CLAUDE.md with build commands once toolchain is configured
+- [x] Configure build toolchain: `cargo` for native, `trunk` for WASM web
+  - `rust-toolchain.toml` pins stable + `wasm32-unknown-unknown`; `trunk` serves `crates/tracker-client/`
+- [x] Set up CI pipeline (build + test for both targets)
+  - See `.github/workflows/ci.yml`: fmt, native (clippy + test), wasm check
+- [x] Update CLAUDE.md with build commands
 
 ## Phase 1 — Core Audio Engine
 

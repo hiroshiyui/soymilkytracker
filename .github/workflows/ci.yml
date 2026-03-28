@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ── Format ────────────────────────────────────────────────────────────────
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all --check
+
+  # ── Native: clippy + test ─────────────────────────────────────────────────
+  native:
+    name: Clippy & Test (native)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq --no-install-recommends \
+            libasound2-dev \
+            libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            pkg-config
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --all
+
+  # ── WASM: check client-facing crates ─────────────────────────────────────
+  wasm:
+    name: Check (wasm32-unknown-unknown)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        # rust-toolchain.toml already declares the wasm32 target;
+        # dtolnay/rust-toolchain honours it automatically.
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check tracker-types
+        run: cargo check --target wasm32-unknown-unknown -p tracker-types
+
+      - name: Check tracker-engine (lib)
+        run: cargo check --target wasm32-unknown-unknown -p tracker-engine --lib
+
+      - name: Check tracker-client (lib)
+        run: cargo check --target wasm32-unknown-unknown -p tracker-client --lib
