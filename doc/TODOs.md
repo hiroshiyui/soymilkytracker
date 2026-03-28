@@ -5,37 +5,18 @@
 
 # TODOs
 
-## Phase 0 — Technology Decision & Project Setup
+## Phase 0 — Technology Decision & Project Setup ✓ Complete
 
-- [x] Evaluate and finalize technology stack
-  - **Decided**: Rust; `egui`/`eframe` UI (dual-target); `fundsp` + `oxisynth` audio; Axum + PostgreSQL backend
-- [x] Choose backend framework → **Axum**
-- [x] Choose database → **PostgreSQL** + local filesystem storage (self-hosted friendly)
-- [x] Decide on compile targets → **Web (WASM) + Native Desktop** from a single codebase
-- [x] Choose audio I/O strategy → `AudioBackend` trait: Web Audio `AudioWorklet` on WASM, `cpal` on native
-- [x] Proof-of-concept spike: Rust WASM `AudioWorklet` producing sound in-browser
-  - See `poc/wasm-audio/` — build with `trunk serve` from that directory
-- [x] Proof-of-concept spike: `cpal` producing sound on native desktop
-  - See `poc/cpal-native/` — `cargo run`
-- [x] Proof-of-concept spike: `egui`/`eframe` rendering a tracker grid cell at pixel-art scale (web + native)
-  - See `poc/egui-grid/` — `cargo run` for native, `trunk serve` for web
-- [x] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)
-  - See `poc/oxisynth-wasm/` — `trunk serve` (requires `TimGM6mb.sf2` symlink)
-- [x] Set up repository structure → Cargo workspace with `tracker-types`, `tracker-engine`, `tracker-client`, `tracker-server`
-- [x] Configure build toolchain: `cargo` for native, `trunk` for WASM web
-  - `rust-toolchain.toml` pins stable + `wasm32-unknown-unknown`; `trunk` serves `crates/tracker-client/`
-- [x] Set up CI pipeline (build + test for both targets)
-  - See `.github/workflows/ci.yml`: fmt, native (clippy + test), wasm check
-- [x] Update CLAUDE.md with build commands
+Stack finalised (2026-03-28): Rust; `egui`/`eframe` UI (dual WASM + native); `fundsp` + `oxisynth`
+audio; Axum + PostgreSQL backend. Four PoC spikes confirmed (WASM AudioWorklet, cpal native,
+egui grid, oxisynth synthesis). Cargo workspace, `rust-toolchain.toml`, Trunk, and GitHub Actions
+CI all in place.
 
 ## Phase 1 — Core Audio Engine
 
-- [x] Research and select audio I/O backends → Web Audio `AudioWorklet` (WASM) + `cpal` (native)
-- [x] Define `AudioBackend` trait and implement for both targets
-  - `WasmAudioBackend` — Web Audio `AudioWorklet` via `wasm-bindgen`
-  - `NativeAudioBackend` — `cpal`
-- [x] Implement XM module file parser (primary format, as used by MilkyTracker)
-  - See `crates/tracker-engine/src/xm.rs` — parses XM v0x0104/0x0103; handles compressed pattern cells, delta-decoded samples, envelopes
+Done: `AudioBackend` trait + `NativeAudioBackend` (cpal) + `WasmAudioBackend` (AudioWorklet);
+XM parser (`tracker-engine::xm`, v0x0104/0x0103, 8 unit tests).
+
 - [ ] Implement MOD module file parser (legacy compatibility)
 - [ ] Implement GUS patch (`.pat`) file loader
   - Format used by Gravis UltraSound and the [Freepats project](http://freepats.zenvoid.org/); historically significant in the DOS/tracker era
@@ -52,8 +33,9 @@
 
 ## Phase 2 — Tracker Editor UI
 
-- [x] Design pixel-art UI mockups (pattern editor, instrument list, sample editor, song arranger)
-  - See `doc/ui-mockups.md` — MilkyTracker-faithful ASCII wireframes, color palette, egui Painter implementation notes
+Done: pixel-art UI mockups (`doc/ui-mockups.md`); IBM EGA 8×8 font vendored
+(`assets/fonts/Ac437_IBM_EGA_8x8.ttf`) and registered in egui via `install_fonts()`.
+
 - [ ] Implement pattern editor grid (note, instrument, volume, effect columns per channel)
 - [ ] Implement keyboard input mapping for note entry (piano-key layout on QWERTY)
 - [ ] Implement instrument list panel

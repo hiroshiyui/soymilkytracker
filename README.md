@@ -7,7 +7,7 @@ A music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTra
 ## Features
 
 - **Pattern editor** — compose music in the classic tracker grid (XM format primary, MOD legacy support)
-- **Built-in soundset** — [TimGM6mb](https://packages.debian.org/sid/timgm6mb-soundfont) (compact GM, GPL-2.0+) and [MuseScore General](https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/) (high-quality GM, MIT) soundfonts bundled; [Open8bitVChiptuner](https://codeberg.org/trzyglow/Open8bitVChiptuner) chiptune palette included for the retro aesthetic
+- **Built-in soundset** — [TimGM6mb](https://packages.debian.org/sid/timgm6mb-soundfont) (compact GM, GPL-2.0+), [MuseScore General](https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/) (full GM+GS, MIT), and [Open8bitVChiptuner](https://codeberg.org/trzyglow/Open8bitVChiptuner) (chiptune palette, CC BY-SA 4.0) soundfonts bundled
 - **Custom instruments** — upload and use your own SF2, SF3, or GUS patch (`.pat`) files
 - **Cloud save** — save and download compositions from a remote server
 - **Publishing** — publish works and playlists; share via an embedded WASM player
@@ -50,12 +50,15 @@ Early development — **Phase 0 complete, Phase 1 underway**. Not yet usable as 
 |---|---|
 | Phase 0 — technology decisions, workspace, CI | **Done** |
 | Phase 1 — core audio engine | **In progress** |
-| Phase 2+ — UI, file I/O, backend, community | Not started |
+| Phase 2 — Tracker Editor UI | **In progress** |
+| Phase 3+ — file I/O, backend, community | Not started |
 
 **What exists today:**
 - `AudioBackend` trait with full implementations for both targets — `NativeAudioBackend` (cpal, stereo interleaved) and `WasmAudioBackend` (Web Audio `AudioWorklet` via MessagePort + requestAnimationFrame fill loop)
-- XM module file parser (`tracker-engine::xm`) — handles compressed pattern data, delta-decoded samples, envelopes, and variable-length headers
-- Two vendored SF2 soundfonts: `TimGM6mb.sf2` (General MIDI, GPL-2.0+) and `Open8bitVChiptuner.sf2` (chiptune style, CC BY-SA 4.0)
+- XM module file parser (`tracker-engine::xm`) — handles compressed pattern data, delta-decoded samples, envelopes, and variable-length headers; 8 unit tests
+- Three vendored soundfonts: `TimGM6mb.sf2` (GM, GPL-2.0+), `MuseScore_General.sf3` (full GM+GS, MIT, SF3 via oxisynth `sf3` feature), `Open8bitVChiptuner.sf2` (chiptune, CC BY-SA 4.0)
+- IBM EGA 8×8 bitmap font (`assets/fonts/Ac437_IBM_EGA_8x8.ttf`, CC BY 4.0) vendored and registered in egui as the primary UI typeface
+- Pixel-art UI mockups (`doc/ui-mockups.md`) — MilkyTracker-faithful wireframes, colour palette, and egui Painter implementation notes for all panels
 - Four confirmed proof-of-concept spikes (WASM AudioWorklet, egui tracker grid, oxisynth SF2 synthesis, cpal native audio)
 
 Contributions and feedback are welcome, but expect significant breaking changes at any stage.

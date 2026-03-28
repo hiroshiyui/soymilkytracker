@@ -32,6 +32,12 @@ Use `#[cfg(target_arch = "wasm32")]` to gate platform-specific code.
 - `backend::NativeAudioBackend` / `WasmAudioBackend` — platform I/O
 - `xm` — XM module file parser (FastTracker II format, v0x0104/0x0103)
 
+**UI font (`tracker-client`):**
+`crates/tracker-client/src/app.rs` — `install_fonts()` registers `Ac437_IBM_EGA_8x8.ttf` under
+the egui family name `"tracker"` (constant `FONT_TRACKER`) and sets it as the default for both
+Proportional and Monospace families. Call once in `TrackerApp::new`. Use
+`FontId::new(8.0, FontFamily::Name("tracker".into()))` for pixel-exact 8 px rendering.
+
 ### Backend
 - **Framework**: Rust + [`axum`](https://github.com/tokio-rs/axum)
 - **Database**: PostgreSQL (user data, composition metadata, playlists)
@@ -49,8 +55,12 @@ crates/
 assets/
   soundfonts/
     TimGM6mb.sf2              # General MIDI, GPL-2.0+ (bundled default instrument set)
+    MuseScore_General.sf3     # Full GM + GS, MIT (high-quality, lazy-load candidate)
     Open8bitVChiptuner.sf2    # Chiptune / 8-bit style, CC BY-SA 4.0
     ATTRIBUTION               # License and attribution for all vendored soundfonts
+  fonts/
+    Ac437_IBM_EGA_8x8.ttf    # IBM EGA 8×8 bitmap font, CC BY 4.0 (VileR / int10h.org)
+    ATTRIBUTION               # License and attribution for all vendored fonts
 ```
 
 Dependency graph: `tracker-types` ← `tracker-engine` ← `tracker-client`; `tracker-types` ← `tracker-server`.
@@ -58,6 +68,7 @@ Dependency graph: `tracker-types` ← `tracker-engine` ← `tracker-client`; `tr
 The `doc/` directory contains the product vision:
 - `doc/product_design.md` — feature list, technology stack, UI/UX guidelines
 - `doc/TODOs.md` — phased task list
+- `doc/ui-mockups.md` — pixel-art UI wireframes and egui Painter implementation notes
 
 ## Architecture Intent
 
