@@ -2,7 +2,7 @@
 
 > **Work in progress — not ready for use.**
 
-A web-based music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTracker, built entirely in Rust and compiled to WebAssembly. It brings the classic module tracker experience to the browser with a pixel-art retro aesthetic — without requiring users to memorize arcane keyboard commands.
+A music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTracker, built entirely in Rust. It targets both **web** (WebAssembly) and **native desktop** from a single codebase, bringing the classic module tracker experience to the browser and desktop with a pixel-art retro aesthetic — without requiring users to memorize arcane keyboard commands.
 
 ## Features
 
@@ -15,15 +15,15 @@ A web-based music tracker inspired by [MilkyTracker](https://milkytracker.org/) 
 
 ## Technology Stack
 
-### Client (WebAssembly)
+### Client (Web WASM + Native Desktop)
 
 | Layer | Library |
 |---|---|
 | UI framework | [`egui`](https://github.com/emilk/egui) + [`eframe`](https://github.com/emilk/egui) |
-| Audio engine | Rust → WASM via Web Audio `AudioWorklet` |
 | DSP / audio graph | [`fundsp`](https://github.com/SamiPerttu/fundsp) |
 | SF2 synthesis | [`oxisynth`](https://github.com/PolyMeilex/OxiSynth) |
-| WASM bindings | [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) |
+| Audio I/O — Web | Web Audio `AudioWorklet` + [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) |
+| Audio I/O — Native | [`cpal`](https://github.com/RustAudio/cpal) |
 
 ### Backend
 

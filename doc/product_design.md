@@ -4,15 +4,17 @@ I want to create a web-based application inspired by MilkyTracker. It should be 
 
 ## Technology Stack (Finalized 2026-03-28)
 
-### Client
+### Client (dual-target: Web WASM + Native Desktop)
 | Layer | Choice |
 |---|---|
-| Audio engine | Rust → WASM in Web Audio `AudioWorklet` |
-| UI framework | `egui` + `eframe` (immediate-mode, WASM-ready) |
-| SF2 synthesis | `oxisynth` (pure Rust, WASM-compatible) |
-| DSP / audio graph | `fundsp` |
-| WASM bindings | `wasm-bindgen` |
+| UI framework | `egui` + `eframe` (native + WASM web, out of the box) |
+| SF2 synthesis | `oxisynth` (pure Rust, all targets) |
+| DSP / audio graph | `fundsp` (pure Rust, all targets) |
 | Module format | XM (primary), MOD (legacy) |
+| Audio I/O — Web | Web Audio `AudioWorklet` via `wasm-bindgen` |
+| Audio I/O — Native | `cpal` (cross-platform: Windows, macOS, Linux) |
+
+The audio engine logic is shared across targets behind an `AudioBackend` trait, gated with `#[cfg(target_arch = "wasm32")]`.
 
 ### Backend
 | Layer | Choice |
