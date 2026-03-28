@@ -43,4 +43,9 @@ No build system has been set up yet. Update this file when a toolchain is chosen
 
 ## License
 
-Apache License 2.0. All new source files should include the standard Apache 2.0 license header (see `doc/TODOs.md` for the header format).
+GNU General Public License v3.0 or later (GPL-3.0-or-later). All new source files should include the following SPDX header:
+
+```
+// SPDX-FileCopyrightText: 2026 HUIHONG YOU
+// SPDX-License-Identifier: GPL-3.0-or-later
+```
