@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PoC — oxisynth WASM</title>
     <link data-trunk rel="rust" data-wasm-opt="0" data-target-name="poc_oxisynth_wasm" />
-    <!-- Serve the SF2 file as a static asset alongside the WASM bundle. -->
-    <link data-trunk rel="copy-file" href="TimGM6mb.sf2" />
+    <!-- Copy the vendored SF2 into the dist directory so it can be fetched by WASM. -->
+    <link data-trunk rel="copy-file" href="../../assets/soundfonts/TimGM6mb.sf2" />
     <style>
         body {
             font-family: monospace;
@@ -34,11 +34,7 @@
     </style>
 </head>
 <body>
-    <!--
-        Setup: place (or symlink) TimGM6mb.sf2 in this directory before running trunk.
-          ln -s /usr/share/sounds/sf2/TimGM6mb.sf2 TimGM6mb.sf2      # Linux
-          # or download from: https://packages.debian.org/sid/timgm6mb-soundfont
-    -->
+    <!-- TimGM6mb.sf2 is vendored at assets/soundfonts/ in the repository root. -->
     <h2>PoC: <code>oxisynth</code> SF2 synthesis in WASM</h2>
     <p>
         Proof-of-concept spike for SoymilkyTracker.<br />
@@ -52,9 +48,10 @@
 
     <hr />
     <p><small>
-        SF2: TimGM6mb (~5.7 MB, Tim Brechbill / M. Gorbe &amp; E. Singer, GPL).<br />
-        In the full app, the Freepats soundfont will be served and streamed
-        the same way, driven by the tracker engine in an AudioWorklet.
+        SF2: TimGM6mb (~5.7 MB, Tim Brechbill / M. Gorbe &amp; E. Singer, GPL-2.0+).<br />
+        Vendored at <code>assets/soundfonts/TimGM6mb.sf2</code> in the repository.<br />
+        In the full app, the Freepats soundfont will be served the same way,
+        driven by the tracker engine in an AudioWorklet.
     </small></p>
 </body>
 </html>

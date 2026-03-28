@@ -1,0 +1,11 @@
+TimGM6mb.sf2
+============
+
+A compact (~5.7 MB) General MIDI soundfont.
+
+Authors:    Tim Brechbill; M. Gorbe and E. Singer (original MuseScore GM font)
+License:    GNU General Public License v2 or later
+Source:     Distributed with the timgm6mb-soundfont package on Debian/Ubuntu
+            https://packages.debian.org/sid/timgm6mb-soundfont
+
+This file is compatible with this project's GPL-3.0-or-later license.

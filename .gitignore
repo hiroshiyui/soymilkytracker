@@ -2,4 +2,5 @@
 poc/**/target
 poc/**/pkg
 poc/**/dist
+# SF2 files in poc/ are local symlinks; the canonical copy lives in assets/soundfonts/
 poc/**/*.sf2
