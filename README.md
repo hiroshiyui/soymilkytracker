@@ -31,7 +31,7 @@ A web-based music tracker inspired by [MilkyTracker](https://milkytracker.org/) 
 |---|---|
 | Framework | Rust + [`axum`](https://github.com/tokio-rs/axum) |
 | Database | PostgreSQL |
-| File storage | S3-compatible object storage |
+| File storage | Local filesystem (self-hosted friendly) |
 | Auth | JWT / OAuth (GitHub, Google) |
 
 ## Project Status

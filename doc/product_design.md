@@ -19,7 +19,7 @@ I want to create a web-based application inspired by MilkyTracker. It should be 
 |---|---|
 | Framework | Rust + `axum` |
 | Database | PostgreSQL |
-| File storage | S3-compatible object storage |
+| File storage | Local filesystem (self-hosted, single server instance) |
 | Auth | JWT / OAuth (GitHub, Google) |
 
 ## Features

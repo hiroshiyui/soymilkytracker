@@ -20,7 +20,7 @@ SoymilkyTracker is a web-based music tracker application inspired by MilkyTracke
 ### Backend
 - **Framework**: Rust + [`axum`](https://github.com/tokio-rs/axum)
 - **Database**: PostgreSQL (user data, composition metadata, playlists)
-- **File storage**: S3-compatible object storage (composition files, custom sound fonts)
+- **File storage**: Local filesystem — designed for self-hosted, single server instance deployment (no object storage dependency)
 - **Auth**: JWT or session-based; OAuth (GitHub/Google) for social login
 
 ## Project Status
