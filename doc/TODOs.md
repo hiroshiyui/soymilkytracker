@@ -1,27 +1,39 @@
+<!--
+ SPDX-FileCopyrightText: 2026 HUIHONG YOU
+ SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # TODOs
 
 ## Phase 0 — Technology Decision & Project Setup
 
 - [x] Evaluate and finalize technology stack
-  - **Decided**: Rust → WASM; `egui`/`eframe` UI; `fundsp` + `oxisynth` audio; Axum + PostgreSQL backend
+  - **Decided**: Rust; `egui`/`eframe` UI (dual-target); `fundsp` + `oxisynth` audio; Axum + PostgreSQL backend
 - [x] Choose backend framework → **Axum**
-- [x] Choose database → **PostgreSQL** + S3-compatible object storage
-- [ ] Proof-of-concept spike: Rust WASM AudioWorklet producing sound in-browser
-- [ ] Proof-of-concept spike: `egui` rendering a tracker grid cell at pixel-art scale
-- [ ] Proof-of-concept spike: `oxisynth` playing a Freepats note from WASM
-- [ ] Set up monorepo or split repo structure (client / server / shared)
-- [ ] Configure build toolchain (CI pipeline, WASM build, asset pipeline)
-- [ ] Write initial README.md
+- [x] Choose database → **PostgreSQL** + local filesystem storage (self-hosted friendly)
+- [x] Decide on compile targets → **Web (WASM) + Native Desktop** from a single codebase
+- [x] Choose audio I/O strategy → `AudioBackend` trait: Web Audio `AudioWorklet` on WASM, `cpal` on native
+- [ ] Proof-of-concept spike: Rust WASM `AudioWorklet` producing sound in-browser
+- [ ] Proof-of-concept spike: `cpal` producing sound on native desktop
+- [ ] Proof-of-concept spike: `egui`/`eframe` rendering a tracker grid cell at pixel-art scale (web + native)
+- [ ] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)
+- [ ] Set up repository structure (client / server / shared crates)
+- [ ] Configure build toolchain: `cargo` for native, `wasm-pack` / `trunk` for WASM web
+- [ ] Set up CI pipeline (build + test for both targets)
 - [ ] Update CLAUDE.md with build commands once toolchain is configured
 
-## Phase 1 — Core Audio Engine (WASM)
+## Phase 1 — Core Audio Engine
 
-- [x] Research and select an audio rendering backend → **Web Audio API AudioWorklet** with `fundsp` + `oxisynth`
-- [ ] Implement MOD/XM module file parser (support at least XM format as used by MilkyTracker)
+- [x] Research and select audio I/O backends → Web Audio `AudioWorklet` (WASM) + `cpal` (native)
+- [ ] Define `AudioBackend` trait and implement for both targets
+  - `WasmAudioBackend` — Web Audio `AudioWorklet` via `wasm-bindgen`
+  - `NativeAudioBackend` — `cpal`
+- [ ] Implement XM module file parser (primary format, as used by MilkyTracker)
+- [ ] Implement MOD module file parser (legacy compatibility)
 - [ ] Implement channel mixing and sample playback engine
 - [ ] Support basic tracker effects (volume, pitch, arpeggio, portamento, vibrato, etc.)
-- [ ] Integrate Freepats General MIDI instrument library as built-in soundset
-- [ ] Expose play / pause / stop / seek controls via WASM bindings
+- [ ] Integrate Freepats General MIDI instrument library as built-in soundset via `oxisynth`
+- [ ] Expose play / pause / stop / seek controls through the `AudioBackend` trait
 - [ ] Write unit tests for parser and mixing engine
 
 ## Phase 2 — Tracker Editor UI
@@ -40,20 +52,26 @@
 
 ## Phase 3 — File I/O & Local Storage
 
-- [ ] Export composition to XM (or native) file format for download
-- [ ] Import existing XM/MOD files from local disk
-- [ ] Auto-save draft to browser localStorage / IndexedDB
-- [ ] Export rendered audio as WAV or MP3 via Web Audio API
+- [ ] Export composition to XM file format for download / save to disk
+- [ ] Import existing XM/MOD files from local disk or file picker
+- [ ] Auto-save draft: `localStorage` / `IndexedDB` on web; local file on native
+- [ ] Export rendered audio as WAV or MP3
+  - Web: via Web Audio API
+  - Native: via `cpal` or a Rust encoding crate
 
 ## Phase 4 — Backend & User Accounts
 
-- [ ] Design REST (or GraphQL) API schema: users, compositions, playlists
+- [ ] Design REST API schema: users, compositions, playlists
 - [ ] Implement user registration, login, and session management (JWT or cookie-based)
+- [ ] OAuth login (GitHub, Google)
 - [ ] Implement composition CRUD: save draft, publish, unpublish, delete
-- [ ] Implement file storage for composition files and custom soundfonts
+- [ ] Implement local filesystem storage for composition files and custom soundfonts
+  - Serve files via `tower-http` `ServeDir`
+  - Document backup strategy for the storage directory
 - [ ] Implement playlist CRUD (create, add/remove tracks, reorder, publish)
-- [ ] Implement user profile page (avatar, bio, published works)
+- [ ] Implement user profile (avatar, bio, published works)
 - [ ] Set up database migrations
+- [ ] Native app: make server connection optional (offline-capable by default)
 
 ## Phase 5 — Community & Discovery
 
@@ -73,9 +91,10 @@
 ## Phase 7 — Polish & Release
 
 - [ ] Accessibility audit (keyboard navigation, screen reader hints where feasible)
-- [ ] Responsive layout for various screen sizes
-- [ ] Performance profiling of WASM audio engine (minimize audio dropouts)
+- [ ] Responsive layout for various screen sizes (web)
+- [ ] Performance profiling of audio engine on both targets (minimize dropouts)
 - [ ] Cross-browser testing (Chrome, Firefox, Safari)
+- [ ] Native desktop packaging (`.app`, `.exe`, `.deb` / `.AppImage`)
 - [ ] Write user-facing documentation / tutorial for first-time tracker users
-- [ ] Set up production deployment (containerization, CDN for WASM/assets)
+- [ ] Set up production deployment: containerized server + CDN for WASM/assets
 - [ ] Security review of file upload pipeline
