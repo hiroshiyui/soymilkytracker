@@ -37,6 +37,9 @@
 - [x] Implement XM module file parser (primary format, as used by MilkyTracker)
   - See `crates/tracker-engine/src/xm.rs` — parses XM v0x0104/0x0103; handles compressed pattern cells, delta-decoded samples, envelopes
 - [ ] Implement MOD module file parser (legacy compatibility)
+- [ ] Implement GUS patch (`.pat`) file loader
+  - Format used by Gravis UltraSound and the [Freepats project](http://freepats.zenvoid.org/); historically significant in the DOS/tracker era
+  - Allows loading individual instrument samples from `.pat` collections alongside SF2/SF3
 - [ ] Implement channel mixing and sample playback engine
 - [ ] Support basic tracker effects (volume, pitch, arpeggio, portamento, vibrato, etc.)
 - [ ] Integrate bundled soundfonts as the default instrument set via `oxisynth`
@@ -58,7 +61,7 @@
 - [ ] Implement transport controls (play song, play pattern, record mode)
 - [ ] Implement BPM / tempo / speed controls
 - [ ] Implement undo/redo history
-- [ ] Support custom sound font file upload and hot-loading into the instrument list
+- [ ] Support custom instrument file upload and hot-loading into the instrument list (SF2, SF3, GUS `.pat`)
 - [ ] Implement keyboard shortcut overlay / help panel (to eliminate need to memorize commands)
 
 ## Phase 3 — File I/O & Local Storage
