@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PoC — oxisynth WASM</title>
+    <link data-trunk rel="rust" data-wasm-opt="0" />
+    <!-- Serve the SF2 file as a static asset alongside the WASM bundle. -->
+    <link data-trunk rel="copy-file" href="TimGM6mb.sf2" />
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 600px;
+            margin: 4rem auto;
+            padding: 0 1rem;
+            background: #1a1a1a;
+            color: #d4d4d4;
+        }
+        h2    { color: #e8c46a; }
+        code  { background: #2a2a2a; padding: 0.1em 0.3em; border-radius: 2px; }
+        button {
+            font-family: monospace;
+            font-size: 1rem;
+            padding: 0.5rem 1.2rem;
+            background: #2a5a2a;
+            color: #9de89d;
+            border: 1px solid #4a9a4a;
+            cursor: pointer;
+        }
+        button:hover { background: #3a7a3a; }
+        #status { color: #9de89d; }
+        hr     { border-color: #333; }
+        small  { color: #888; }
+    </style>
+</head>
+<body>
+    <!--
+        Setup: place (or symlink) TimGM6mb.sf2 in this directory before running trunk.
+          ln -s /usr/share/sounds/sf2/TimGM6mb.sf2 TimGM6mb.sf2      # Linux
+          # or download from: https://packages.debian.org/sid/timgm6mb-soundfont
+    -->
+    <h2>PoC: <code>oxisynth</code> SF2 synthesis in WASM</h2>
+    <p>
+        Proof-of-concept spike for SoymilkyTracker.<br />
+        Fetches <code>TimGM6mb.sf2</code>, loads it with <code>oxisynth</code>
+        running in WASM, renders A4 (Acoustic Grand Piano) to a PCM buffer,
+        and plays it via <code>AudioBufferSourceNode</code>.
+    </p>
+
+    <p><button id="play-btn">▶ Play A4 (piano)</button></p>
+    <p>Status: <span id="status">idle — click to start</span></p>
+
+    <hr />
+    <p><small>
+        SF2: TimGM6mb (~5.7 MB, Tim Brechbill / M. Gorbe &amp; E. Singer, GPL).<br />
+        In the full app, the Freepats soundfont will be served and streamed
+        the same way, driven by the tracker engine in an AudioWorklet.
+    </small></p>
+</body>
+</html>

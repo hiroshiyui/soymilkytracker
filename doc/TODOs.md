@@ -16,8 +16,10 @@
 - [x] Proof-of-concept spike: Rust WASM `AudioWorklet` producing sound in-browser
   - See `poc/wasm-audio/` — build with `trunk serve` from that directory
 - [ ] Proof-of-concept spike: `cpal` producing sound on native desktop
-- [ ] Proof-of-concept spike: `egui`/`eframe` rendering a tracker grid cell at pixel-art scale (web + native)
-- [ ] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)
+- [x] Proof-of-concept spike: `egui`/`eframe` rendering a tracker grid cell at pixel-art scale (web + native)
+  - See `poc/egui-grid/` — `cargo run` for native, `trunk serve` for web
+- [x] Proof-of-concept spike: `oxisynth` playing a Freepats note (both targets)
+  - See `poc/oxisynth-wasm/` — `trunk serve` (requires `TimGM6mb.sf2` symlink)
 - [x] Set up repository structure → Cargo workspace with `tracker-types`, `tracker-engine`, `tracker-client`, `tracker-server`
 - [ ] Configure build toolchain: `cargo` for native, `wasm-pack` / `trunk` for WASM web
 - [ ] Set up CI pipeline (build + test for both targets)

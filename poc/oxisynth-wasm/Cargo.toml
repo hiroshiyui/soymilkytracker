@@ -1,0 +1,32 @@
+[package]
+name = "poc-oxisynth-wasm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+oxisynth             = "0.1"
+wasm-bindgen         = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys               = "0.3"
+web-sys = { version = "0.3", features = [
+    # DOM
+    "Window",
+    "Document",
+    "Element",
+    "Node",
+    "HtmlButtonElement",
+    # Web Audio — buffer-based playback
+    "AudioContext",
+    "AudioBuffer",
+    "AudioBufferSourceNode",
+    "AudioDestinationNode",
+    "AudioNode",
+    # Fetch API — load the SF2 file
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "Response",
+] }
