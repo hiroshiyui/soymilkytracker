@@ -44,7 +44,21 @@ A music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTra
 
 ## Project Status
 
-The technology stack has been finalized and implementation is about to begin. There is no working software yet. Contributions and feedback are welcome, but expect significant breaking changes at any stage.
+Early development — **Phase 0 complete, Phase 1 underway**. Not yet usable as an application.
+
+| Milestone | Status |
+|---|---|
+| Phase 0 — technology decisions, workspace, CI | **Done** |
+| Phase 1 — core audio engine | **In progress** |
+| Phase 2+ — UI, file I/O, backend, community | Not started |
+
+**What exists today:**
+- `AudioBackend` trait with full implementations for both targets — `NativeAudioBackend` (cpal, stereo interleaved) and `WasmAudioBackend` (Web Audio `AudioWorklet` via MessagePort + requestAnimationFrame fill loop)
+- XM module file parser (`tracker-engine::xm`) — handles compressed pattern data, delta-decoded samples, envelopes, and variable-length headers
+- Two vendored SF2 soundfonts: `TimGM6mb.sf2` (General MIDI, GPL-2.0+) and `Open8bitVChiptuner.sf2` (chiptune style, CC BY-SA 4.0)
+- Four confirmed proof-of-concept spikes (WASM AudioWorklet, egui tracker grid, oxisynth SF2 synthesis, cpal native audio)
+
+Contributions and feedback are welcome, but expect significant breaking changes at any stage.
 
 See [`doc/TODOs.md`](doc/TODOs.md) for the phased task list and [`doc/product_design.md`](doc/product_design.md) for the full product vision.
 

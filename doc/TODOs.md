@@ -34,11 +34,13 @@
 - [x] Define `AudioBackend` trait and implement for both targets
   - `WasmAudioBackend` — Web Audio `AudioWorklet` via `wasm-bindgen`
   - `NativeAudioBackend` — `cpal`
-- [ ] Implement XM module file parser (primary format, as used by MilkyTracker)
+- [x] Implement XM module file parser (primary format, as used by MilkyTracker)
+  - See `crates/tracker-engine/src/xm.rs` — parses XM v0x0104/0x0103; handles compressed pattern cells, delta-decoded samples, envelopes
 - [ ] Implement MOD module file parser (legacy compatibility)
 - [ ] Implement channel mixing and sample playback engine
 - [ ] Support basic tracker effects (volume, pitch, arpeggio, portamento, vibrato, etc.)
 - [ ] Integrate Freepats General MIDI instrument library as built-in soundset via `oxisynth`
+  - SF2 assets already vendored: `assets/soundfonts/TimGM6mb.sf2` (GPL-2.0+) and `Open8bitVChiptuner.sf2` (CC BY-SA 4.0)
 - [ ] Expose play / pause / stop / seek controls through the `AudioBackend` trait
 - [ ] Write unit tests for parser and mixing engine
 
