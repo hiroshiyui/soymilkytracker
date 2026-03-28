@@ -52,7 +52,8 @@
 
 ## Phase 2 — Tracker Editor UI
 
-- [ ] Design pixel-art UI mockups (pattern editor, instrument list, sample editor, song arranger)
+- [x] Design pixel-art UI mockups (pattern editor, instrument list, sample editor, song arranger)
+  - See `doc/ui-mockups.md` — MilkyTracker-faithful ASCII wireframes, color palette, egui Painter implementation notes
 - [ ] Implement pattern editor grid (note, instrument, volume, effect columns per channel)
 - [ ] Implement keyboard input mapping for note entry (piano-key layout on QWERTY)
 - [ ] Implement instrument list panel
