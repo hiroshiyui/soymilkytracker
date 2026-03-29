@@ -193,8 +193,15 @@ impl PatternEditor {
         self.handle_entry(ui, pattern, row_count);
 
         let font_id = FontId::new(8.0, FontFamily::Name("tracker".into()));
-        let content_w = ROWNUM_W + channel_count as f32 * CHANNEL_W;
-        let content_h = HEADER_H + row_count as f32 * ROW_H;
+        // Minimum width required to display all channels; expand to fill the
+        // viewport so the background covers the whole central panel when there
+        // are fewer channels than can fill the window.
+        let channels_w = ROWNUM_W + channel_count as f32 * CHANNEL_W;
+        let content_w = channels_w.max(ui.available_width());
+        // Similarly, ensure the painter fills the full viewport height so the
+        // black background extends past the last row when the pattern is short.
+        let rows_h = HEADER_H + row_count as f32 * ROW_H;
+        let content_h = rows_h.max(ui.available_height());
 
         // Consume the flag before entering the ScrollArea closure so we can
         // pass its value without borrowing self across the closure boundary.
