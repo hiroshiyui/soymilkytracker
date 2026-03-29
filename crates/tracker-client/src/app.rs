@@ -28,7 +28,10 @@ use std::sync::Arc;
 use egui::{Align2, Color32, FontFamily, FontId, Frame, Margin, RichText, Sense, Ui, Vec2};
 use tracker_engine::{
     TrackerAudio,
-    xm::{SampleLoopType, XmCell, XmEnvelope, XmInstrument, XmModule, XmNote, XmPattern},
+    xm::{
+        EnvelopePoint, SampleLoopType, XmCell, XmEnvelope, XmInstrument, XmModule, XmNote,
+        XmPattern, XmSample,
+    },
 };
 #[cfg(not(target_arch = "wasm32"))]
 use tracker_engine::backend::NativeAudioBackend;
@@ -1086,29 +1089,81 @@ fn make_audio() -> TrackerAudio {
 
 fn default_module() -> XmModule {
     XmModule {
-        name: "Untitled".to_string(),
+        name: "Happy Birthday".to_string(),
         tracker_name: "SoymilkyTracker".to_string(),
         version: 0x0104,
         song_length: 1,
         restart_position: 0,
-        channel_count: 4,
+        channel_count: 1,
         default_tempo: 6,
-        default_bpm: 125,
+        default_bpm: 120,
         linear_frequencies: true,
         pattern_order: vec![0],
-        patterns: vec![demo_pattern()],
-        instruments: vec![
-            make_instrument("Lead Synth"),
-            make_instrument("Bass Line"),
-            make_instrument("Melody"),
-            make_instrument("Hi-Hat"),
-        ],
+        patterns: vec![happy_birthday_pattern()],
+        instruments: vec![sine_bell_instrument()],
     }
 }
 
-fn make_instrument(name: &str) -> XmInstrument {
+/// A 16-sample forward-looped sine wave.
+///
+/// Pitch model: at XM note C5 (note 61, pitch 60), the player consumes
+/// 8363 source frames per second.  With a 16-frame loop, the output
+/// frequency is 8363 / 16 ≈ 523 Hz ≈ C5.  All other notes track
+/// correctly because the increment scales by the same 2^(Δsemitone/12).
+fn sine_bell_instrument() -> XmInstrument {
+    // Generate one cycle of a sine wave (16 samples).
+    let data: Vec<i16> = (0..16u32)
+        .map(|i| {
+            let angle = 2.0 * std::f64::consts::PI * i as f64 / 16.0;
+            (angle.sin() * 32767.0) as i16
+        })
+        .collect();
+
+    let sample = XmSample {
+        name: "Sine 16".to_string(),
+        loop_start: 0,
+        loop_length: 16,
+        loop_type: SampleLoopType::Forward,
+        volume: 64,
+        finetune: 0,
+        panning: 128,
+        relative_note: 0,
+        data,
+    };
+
+    // Envelope: instant attack at full volume (point 0 → sustain at point 1),
+    // then fade from 64 → 0 over 64 ticks after key-off.
+    let volume_envelope = XmEnvelope {
+        points: vec![
+            EnvelopePoint { tick: 0, value: 64 },
+            EnvelopePoint { tick: 1, value: 64 },
+            EnvelopePoint { tick: 65, value: 0 },
+        ],
+        sustain_point: 1, // hold at index 1 (full volume) while key is held
+        loop_start: 0,
+        loop_end: 0,
+        enabled: true,
+        sustain: true,
+        looped: false,
+    };
+
     XmInstrument {
-        name: name.to_string(),
+        name: "Sine Bell".to_string(),
+        note_to_sample: [0u8; 96],
+        volume_envelope,
+        panning_envelope: XmEnvelope::default(),
+        volume_fadeout: 4096, // fast fade-out on key-off
+        vibrato_type: 0,
+        vibrato_sweep: 0,
+        vibrato_depth: 0,
+        vibrato_rate: 0,
+        samples: vec![sample],
+    }
+}
+
+fn make_empty_instrument() -> XmInstrument {
+    XmInstrument {
+        name: String::new(),
         note_to_sample: [0u8; 96],
         volume_envelope: XmEnvelope::default(),
         panning_envelope: XmEnvelope::default(),
@@ -1119,10 +1174,6 @@ fn make_instrument(name: &str) -> XmInstrument {
         vibrato_rate: 0,
         samples: vec![],
     }
-}
-
-fn make_empty_instrument() -> XmInstrument {
-    make_instrument("")
 }
 
 fn expand_pattern(pat: &mut XmPattern) {
@@ -1156,67 +1207,101 @@ fn shortcut_section(ui: &mut Ui, heading: &str, rows: &[(&str, &str)]) {
         });
 }
 
-fn demo_pattern() -> XmPattern {
-    let channels = 4;
-    let rows = 64;
-    let mut grid: Vec<Vec<XmCell>> = vec![vec![XmCell::default(); channels]; rows];
+/// "Happy Birthday to You" melody, key of C, 3/4 time.
+///
+/// Layout: 4 rows = 1 quarter note, 12 rows = 1 bar.
+/// XM note numbers (1-indexed): C4=49, D4=51, E4=53, F4=54,
+/// G4=56, A4=58, Bb4=59, C5=61.
+///
+/// ```text
+/// Row  Note  Syllable
+///  0   C4    Hap  (pickup — 2 rows, eighth)
+///  2   C4    py
+///  4   D4    BIRTH (bar 1)
+///  8   C4    DAY
+/// 12   F4    to
+/// 16   E4    YOU  (bar 2, held 12 rows)
+/// 28   C4    Hap  (pickup)
+/// 30   C4    py
+/// 32   D4    BIRTH (bar 3)
+/// 36   C4    DAY
+/// 40   G4    to
+/// 44   F4    YOU  (bar 4, held 12 rows)
+/// 56   C4    Hap  (pickup)
+/// 58   C4    py
+/// 60   C5    BIRTH (bar 5)
+/// 64   A4    DAY
+/// 68   F4    dear
+/// 72   E4    (name) (bar 6)
+/// 76   D4    —
+/// 84   Bb4   Hap  (pickup)
+/// 86   Bb4   py
+/// 88   A4    BIRTH (bar 7)
+/// 92   F4    DAY
+/// 96   G4    to
+/// 100  F4    YOU  (bar 8, held 12 rows → pattern end at 112)
+/// ```
+fn happy_birthday_pattern() -> XmPattern {
+    const C4: u8 = 49;
+    const D4: u8 = 51;
+    const E4: u8 = 53;
+    const F4: u8 = 54;
+    const G4: u8 = 56;
+    const A4: u8 = 58;
+    const BB4: u8 = 59;
+    const C5: u8 = 61;
 
-    for r in (0..rows).step_by(4) {
-        grid[r][0] = XmCell {
-            note: XmNote::On(49),
+    let mut grid: Vec<Vec<XmCell>> = vec![vec![XmCell::default(); 1]; 128];
+
+    let melody: &[(usize, u8)] = &[
+        // Pickup (beat 3 of intro)
+        (0, C4),
+        (2, C4),
+        // Bar 1: "Birthday to"
+        (4, D4),
+        (8, C4),
+        (12, F4),
+        // Bar 2: "You" (held dotted-half = 12 rows)
+        (16, E4),
+        // Pickup
+        (28, C4),
+        (30, C4),
+        // Bar 3: "Birthday to"
+        (32, D4),
+        (36, C4),
+        (40, G4),
+        // Bar 4: "You" (held)
+        (44, F4),
+        // Pickup
+        (56, C4),
+        (58, C4),
+        // Bar 5: "Birthday dear"
+        (60, C5),
+        (64, A4),
+        (68, F4),
+        // Bar 6: "(name)" — E quarter + D half
+        (72, E4),
+        (76, D4),
+        // Pickup
+        (84, BB4),
+        (86, BB4),
+        // Bar 7: "Birthday to"
+        (88, A4),
+        (92, F4),
+        (96, G4),
+        // Bar 8: "You" (held dotted-half)
+        (100, F4),
+    ];
+
+    for &(row, note) in melody {
+        grid[row][0] = XmCell {
+            note: XmNote::On(note),
             instrument: 1,
-            volume: 0x50,
+            volume: 0x50, // volume column: set to max (0x50 = 64)
             effect: 0,
             effect_param: 0,
         };
     }
-    for (r, note) in [(8, 44u8), (16, 56), (24, 44), (32, 56), (40, 44), (48, 56), (56, 44)] {
-        grid[r][1] = XmCell {
-            note: XmNote::On(note),
-            instrument: 2,
-            volume: 0x40,
-            effect: 0,
-            effect_param: 0,
-        };
-    }
-    for &(r, note, fx, fp) in &[
-        (0, 53u8, 0x04u8, 0x28u8),
-        (4, 55, 0x0A, 0x04),
-        (8, 57, 0, 0),
-        (12, 55, 0, 0),
-        (16, 53, 0x04, 0x18),
-        (20, 52, 0, 0),
-        (24, 50, 0, 0),
-        (28, 48, 0, 0),
-        (32, 49, 0, 0),
-        (48, 53, 0x0C, 0x40),
-        (56, 57, 0x0C, 0x30),
-    ] {
-        grid[r][2] = XmCell {
-            note: XmNote::On(note),
-            instrument: 3,
-            volume: 0,
-            effect: fx,
-            effect_param: fp,
-        };
-    }
-    for r in (2..rows).step_by(4) {
-        grid[r][3] = XmCell {
-            note: XmNote::On(61),
-            instrument: 4,
-            volume: 0x30,
-            effect: 0,
-            effect_param: 0,
-        };
-    }
-    for r in [10, 26, 42, 58] {
-        grid[r][3] = XmCell {
-            note: XmNote::Off,
-            instrument: 0,
-            volume: 0,
-            effect: 0,
-            effect_param: 0,
-        };
-    }
+
     XmPattern { rows: grid }
 }
