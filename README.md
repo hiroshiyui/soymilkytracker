@@ -6,7 +6,7 @@ A music tracker inspired by [MilkyTracker](https://milkytracker.org/) and ProTra
 
 ## Features
 
-- **Pattern editor** — compose music in the classic tracker grid (XM format primary, MOD legacy support)
+- **Pattern editor** — compose music in the classic tracker grid (XM format primary, MOD/S3M legacy support)
 - **Built-in soundset** — [TimGM6mb](https://packages.debian.org/sid/timgm6mb-soundfont) (compact GM, GPL-2.0+), [MuseScore General](https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/) (full GM+GS, MIT), and [Open8bitVChiptuner](https://codeberg.org/trzyglow/Open8bitVChiptuner) (chiptune palette, CC BY-SA 4.0) soundfonts bundled
 - **Custom instruments** — upload and use your own SF2, SF3, or GUS patch (`.pat`) files
 - **Cloud save** — save and download compositions from a remote server
@@ -60,6 +60,7 @@ Early development — **Phase 1 complete, Phase 2 underway**. Not yet usable as 
 - `TrackerAudio` high-level transport controller — cfg-gated `Arc<Mutex<Player>>` (native) vs `Rc<RefCell<Player>>` (WASM); `load()`, `play()`, `pause()`, `stop()`, `seek()`, `position()`
 - `SfSynth` SF2/SF3 synthesiser wrapping `oxisynth` — `load_bundled()`, `load_font_bytes()`, full MIDI event dispatch, stereo-interleaved fill
 - MOD file parser (`tracker-engine::modfile`) — 4-to-32 channel ProTracker/compatible, Amiga PAL period → XM pitch conversion, all common format variants (`M.K.`, `M!K!`, `FLT4/8`, `OCTA`, `NNCHNu`)
+- S3M file parser (`tracker-engine::s3m`) — Scream Tracker 3 SCRM format; PCM type-1 instruments; c2spd → relative_note + finetune; packed 64-row pattern format; full A–Z effect mapping to XM; AdLib/OPL channels silently ignored; 18 unit tests
 - GUS `.pat` patch file loader (`tracker-engine::gus`) — Freepats-compatible; pitch-correction via `12×log₂(sample_rate/root_freq_hz)`; 96-entry note-to-sample map
 - Three vendored soundfonts: `TimGM6mb.sf2` (GM, GPL-2.0+), `MuseScore_General.sf3` (full GM+GS, MIT), `Open8bitVChiptuner.sf2` (chiptune, CC BY-SA 4.0)
 - IBM EGA 8×8 bitmap font (`assets/fonts/Ac437_IBM_EGA_8x8.ttf`, CC BY 4.0) vendored and registered in egui as the primary UI typeface

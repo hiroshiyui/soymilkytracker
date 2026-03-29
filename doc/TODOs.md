@@ -18,8 +18,9 @@ All items done (2026-03-29): `AudioBackend` trait + `NativeAudioBackend` (cpal) 
 `WasmAudioBackend` (AudioWorklet); XM parser; XM channel mixing engine with full effect set
 (vibrato, tremolo, portamento, Exx extended effects, volume/panning envelopes, fadeout);
 `TrackerAudio` transport controller; `SfSynth`/`BundledFont` oxisynth wrapper; MOD parser
-(4–32 channels, Amiga PAL period conversion); GUS `.pat` loader (Freepats-compatible, pitch
-correction, note-to-sample map). 45 unit tests passing.
+(4–32 channels, Amiga PAL period conversion); S3M parser (Scream Tracker 3 SCRM format,
+packed patterns, A–Z effect mapping, 18 unit tests); GUS `.pat` loader (Freepats-compatible,
+pitch correction, note-to-sample map). 63+ unit tests passing.
 
 ## Phase 2 — Tracker Editor UI
 

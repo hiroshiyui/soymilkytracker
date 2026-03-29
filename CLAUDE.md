@@ -35,6 +35,7 @@ Use `#[cfg(target_arch = "wasm32")]` to gate platform-specific code.
 - `audio::TrackerAudio` — high-level transport controller; cfg-gated player handle (`Arc<Mutex<Player>>` native, `Rc<RefCell<Player>>` WASM); `load()`, `play()`, `pause()`, `stop()`, `seek()`, `position()`, `is_playing()`
 - `synth::SfSynth` / `BundledFont` — oxisynth wrapper; `load_bundled()`, `load_font_bytes()`, `note_on/off()`, `program_change()`, `all_notes_off()`, `fill()`; `Open8bitVChiptuner.sf2` always embedded, `TimGM6mb.sf2` native-only
 - `modfile` — ProTracker MOD parser (4–32 channels; `M.K.`, `M!K!`, `FLT4/8`, `OCTA`, `NNCHNu`); Amiga PAL period → XM pitch via `freq = 3_546_895 / period`
+- `s3m` — Scream Tracker 3 `.s3m` parser; SCRM-magic detection; PCM type-1 instruments; c2spd → relative_note + finetune via `12×log₂(c2spd / 8363)`; packed 64-row pattern format; effect mapping A–Z → XM 0x00–0x0F + Exx; AdLib/OPL channels silently ignored
 - `gus` — Gravis UltraSound `.pat` loader; pitch-correction formula `12×log₂(sample_rate / root_freq_hz)`; 96-entry note-to-sample map; tested against Freepats project patches
 
 **UI font (`tracker-client`):**
