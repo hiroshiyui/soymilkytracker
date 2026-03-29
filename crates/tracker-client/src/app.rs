@@ -37,6 +37,12 @@ pub fn install_fonts(ctx: &egui::Context) {
         .entry(egui::FontFamily::Monospace)
         .or_default()
         .insert(0, FONT_TRACKER.to_owned());
+    // Register the named family so FontFamily::Name("tracker") resolves.
+    fonts
+        .families
+        .entry(egui::FontFamily::Name(FONT_TRACKER.into()))
+        .or_default()
+        .push(FONT_TRACKER.to_owned());
 
     ctx.set_fonts(fonts);
 }
