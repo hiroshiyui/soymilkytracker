@@ -4,6 +4,7 @@
 pub mod audio;
 pub mod backend;
 pub mod dsp;
+pub mod modfile;
 pub mod player;
 pub mod synth;
 pub mod xm;

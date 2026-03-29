@@ -609,6 +609,12 @@ impl Player {
                 // 8xx — set panning (0–255 → 0.0–1.0).
                 self.channels[ch_idx].panning = param as f32 / 255.0;
             }
+            0x09 => {
+                // 9xx — sample offset: jump playback position to param * 256 frames.
+                if param > 0 {
+                    self.channels[ch_idx].pos = param as f64 * 256.0;
+                }
+            }
             0x0B => {
                 // Bxx — position jump to order `param`.
                 self.next_order = Some(param as usize);
@@ -824,6 +830,10 @@ impl Player {
                 let lfo = vibrato_lfo(ch.tremolo_phase) as f32;
                 ch.tremolo_offset = lfo * ch.tremolo_depth as f32 / 64.0;
                 ch.tremolo_phase = ch.tremolo_phase.wrapping_add(ch.tremolo_speed) & 63;
+            }
+            0x09 => {
+                // 9xx — sample offset: set playback start position.
+                // Applied on tick 0 only; tick > 0 does nothing for 9xx.
             }
             0x0A => {
                 // Axx — volume slide.
