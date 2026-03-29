@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 pub mod app;
+pub mod pattern_editor;
 
 /// WASM entry point — called automatically by the browser via wasm-bindgen.
 #[cfg(target_arch = "wasm32")]
