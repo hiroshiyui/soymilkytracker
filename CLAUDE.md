@@ -29,8 +29,13 @@ Use `#[cfg(target_arch = "wasm32")]` to gate platform-specific code.
 `FillCallback` is cfg-gated: `Box<dyn FnMut(&mut [f32]) + Send + 'static>` on native (audio runs on a cpal thread); `Box<dyn FnMut(&mut [f32]) + 'static>` on WASM (single-threaded, no `Send` required).
 
 **Key modules in `tracker-engine`:**
-- `backend::NativeAudioBackend` / `WasmAudioBackend` — platform I/O
+- `backend::NativeAudioBackend` / `WasmAudioBackend` — platform I/O; `preferred_sample_rate()` queries cpal on native, returns 44 100 on WASM
 - `xm` — XM module file parser (FastTracker II format, v0x0104/0x0103)
+- `player::Player` — XM channel mixing and sample playback engine; linear-frequency pitch model, forward/ping-pong looping, volume/panning envelopes with fadeout, full effect set (0x00–0x0F + Exx extended effects, vibrato LFO, tremolo, pattern loop, note cut/delay)
+- `audio::TrackerAudio` — high-level transport controller; cfg-gated player handle (`Arc<Mutex<Player>>` native, `Rc<RefCell<Player>>` WASM); `load()`, `play()`, `pause()`, `stop()`, `seek()`, `position()`, `is_playing()`
+- `synth::SfSynth` / `BundledFont` — oxisynth wrapper; `load_bundled()`, `load_font_bytes()`, `note_on/off()`, `program_change()`, `all_notes_off()`, `fill()`; `Open8bitVChiptuner.sf2` always embedded, `TimGM6mb.sf2` native-only
+- `modfile` — ProTracker MOD parser (4–32 channels; `M.K.`, `M!K!`, `FLT4/8`, `OCTA`, `NNCHNu`); Amiga PAL period → XM pitch via `freq = 3_546_895 / period`
+- `gus` — Gravis UltraSound `.pat` loader; pitch-correction formula `12×log₂(sample_rate / root_freq_hz)`; 96-entry note-to-sample map; tested against Freepats project patches
 
 **UI font (`tracker-client`):**
 `crates/tracker-client/src/app.rs` — `install_fonts()` registers `Ac437_IBM_EGA_8x8.ttf` under
@@ -49,7 +54,7 @@ Proportional and Monospace families. Call once in `TrackerApp::new`. Use
 ```
 crates/
   tracker-types/    # Shared data types (API DTOs, composition format) — no I/O, no async
-  tracker-engine/   # Audio DSP, synthesis, AudioBackend trait, XM parser — compiles to WASM + native
+  tracker-engine/   # Audio DSP, synthesis, AudioBackend trait, XM/MOD/GUS parsers, Player — compiles to WASM + native
   tracker-client/   # egui/eframe UI — compiles to WASM + native desktop
   tracker-server/   # Axum HTTP server — native only
 assets/

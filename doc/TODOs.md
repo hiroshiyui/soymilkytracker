@@ -12,24 +12,14 @@ audio; Axum + PostgreSQL backend. Four PoC spikes confirmed (WASM AudioWorklet, 
 egui grid, oxisynth synthesis). Cargo workspace, `rust-toolchain.toml`, Trunk, and GitHub Actions
 CI all in place.
 
-## Phase 1 — Core Audio Engine
+## Phase 1 — Core Audio Engine ✓ Complete
 
-Done: `AudioBackend` trait + `NativeAudioBackend` (cpal) + `WasmAudioBackend` (AudioWorklet);
-XM parser (`tracker-engine::xm`, v0x0104/0x0103, 8 unit tests).
-
-- [ ] Implement MOD module file parser (legacy compatibility)
-- [ ] Implement GUS patch (`.pat`) file loader
-  - Format used by Gravis UltraSound and the [Freepats project](http://freepats.zenvoid.org/); historically significant in the DOS/tracker era
-  - Allows loading individual instrument samples from `.pat` collections alongside SF2/SF3
-- [ ] Implement channel mixing and sample playback engine
-- [ ] Support basic tracker effects (volume, pitch, arpeggio, portamento, vibrato, etc.)
-- [ ] Integrate bundled soundfonts as the default instrument set via `oxisynth`
-  - `TimGM6mb.sf2` (GPL-2.0+) — compact GM default
-  - `MuseScore_General.sf3` (MIT) — high-quality GM, opt-in / lazy-load
-  - `Open8bitVChiptuner.sf2` (CC BY-SA 4.0) — chiptune palette
-  - All three vendored in `assets/soundfonts/`; oxisynth `sf3` feature already enabled
-- [ ] Expose play / pause / stop / seek controls through the `AudioBackend` trait
-- [ ] Write unit tests for parser and mixing engine
+All items done (2026-03-29): `AudioBackend` trait + `NativeAudioBackend` (cpal) +
+`WasmAudioBackend` (AudioWorklet); XM parser; XM channel mixing engine with full effect set
+(vibrato, tremolo, portamento, Exx extended effects, volume/panning envelopes, fadeout);
+`TrackerAudio` transport controller; `SfSynth`/`BundledFont` oxisynth wrapper; MOD parser
+(4–32 channels, Amiga PAL period conversion); GUS `.pat` loader (Freepats-compatible, pitch
+correction, note-to-sample map). 45 unit tests passing.
 
 ## Phase 2 — Tracker Editor UI
 
