@@ -37,10 +37,14 @@ to select); sample list panel (samples of selected instrument); song order list 
 pattern expand ×2 / shrink /2; live playback position display (Ord/Row/BPM); `TrackerApp` holds
 full `XmModule` + `TrackerAudio`.
 
-- [ ] Implement sample waveform viewer and basic editor (loop points, trim)
-- [ ] Implement undo/redo history
-- [ ] Support custom instrument file upload and hot-loading into the instrument list (SF2, SF3, GUS `.pat`)
-- [ ] Implement keyboard shortcut overlay / help panel (to eliminate need to memorize commands)
+Done (2026-03-29): sample waveform viewer bottom panel (`show_sample_editor`: polyline waveform,
+loop start/end markers, loop type ComboBox); undo/redo history (`undo_stack`/`redo_stack`, 50-entry
+limit, `checkpoint()`, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z); native instrument file loading via `rfd`
+file dialog (GUS `.pat` via `tracker_engine::gus::parse()`); keyboard shortcut overlay (F1 toggle,
+floating help window with QWERTY piano layout and all shortcut sections); inline instrument name
+editing (double-click to edit, TextEdit in-place, commit on Enter / focus-loss); responsive pattern
+editor (`channel_w = max(CHANNEL_W, avail_w / n_channels)`, scale applied to all sub-column
+positions and click-to-position).
 
 ## Phase 3 — File I/O & Local Storage
 
