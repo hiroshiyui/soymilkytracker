@@ -698,17 +698,144 @@ mod tests {
         assert!(parse(&data).is_err());
     }
 
-    // ── Integration tests against real OMF2097 S3M files ─────────────────
+    // ── Synthetic fixture ─────────────────────────────────────────────────
+    //
+    // Build a minimal but complete S3M binary from scratch — no external file
+    // needed, no license concerns, fully committed to the repo.
+    //
+    // Layout (all paragraph-aligned, 1 paragraph = 16 bytes):
+    //   0x000–0x05F  header (96 bytes)
+    //   0x060        order list  (1 byte: pattern 0)
+    //   0x061–0x062  instrument parapointer  (→ para 0x07 = offset 0x070)
+    //   0x063–0x064  pattern parapointer     (→ para 0x0C = offset 0x0C0)
+    //   0x070–0x0BF  instrument block (80 bytes): PCM, c2spd=8363, 16 samples
+    //   0x0C0–0x108  pattern block: row 0 has C-5 on ch 0; rows 1–63 empty
+    //   0x110–0x11F  sample data: 16 × 0x80 (unsigned 8-bit silence)
+    fn build_minimal_s3m() -> Vec<u8> {
+        const INSTR_PARA: u16 = 0x07; // instrument block at 0x070
+        const PAT_PARA: u16 = 0x0C; //   pattern block  at 0x0C0
+        const SAMPLE_PARA: u16 = 0x11; // sample data   at 0x110
+        const SAMPLE_LEN: u32 = 16;
+        const TOTAL: usize = 0x120; // 288 bytes
 
-    const MENU: &str = "/tmp/03-MENU.S3M";
+        let mut d = vec![0u8; TOTAL];
 
-    fn load(path: &str) -> Vec<u8> {
-        std::fs::read(path).expect(path)
+        // ── Header ────────────────────────────────────────────────────────
+        let title = b"Minimal S3M";
+        d[0x00..title.len()].copy_from_slice(title);
+        d[0x1C] = 0x1A; // DOS EOF marker
+        d[0x1D] = 0x10; // type = ST3 module
+        d[0x20..0x22].copy_from_slice(&1u16.to_le_bytes()); // order_count = 1
+        d[0x22..0x24].copy_from_slice(&1u16.to_le_bytes()); // instr_count  = 1
+        d[0x24..0x26].copy_from_slice(&1u16.to_le_bytes()); // pattern_count = 1
+        // flags = 0, tracker_version = ST3.20
+        d[0x28..0x2A].copy_from_slice(&0x1320u16.to_le_bytes());
+        // file_format_version = 1 → unsigned samples
+        d[0x2A..0x2C].copy_from_slice(&1u16.to_le_bytes());
+        d[0x2C..0x30].copy_from_slice(b"SCRM");
+        d[0x30] = 64; // global vol
+        d[0x31] = 6; //  initial speed (ticks/row)
+        d[0x32] = 125; // initial BPM
+        d[0x33] = 0xC0; // master vol
+
+        // Channel settings: ch 0 = left PCM (0), ch 1 = right PCM (8), rest unused
+        d[0x40] = 0x00;
+        d[0x41] = 0x08;
+        d[0x42..0x60].fill(0xFF);
+
+        // ── Order list ────────────────────────────────────────────────────
+        d[0x60] = 0x00; // order 0 → play pattern 0
+
+        // ── Parapointers ─────────────────────────────────────────────────
+        d[0x61..0x63].copy_from_slice(&INSTR_PARA.to_le_bytes());
+        d[0x63..0x65].copy_from_slice(&PAT_PARA.to_le_bytes());
+
+        // ── Instrument block (at 0x070) ───────────────────────────────────
+        let ib = INSTR_PARA as usize * 16;
+        d[ib] = 0x01; // type = PCM
+        // memseg: hi byte then lo word
+        d[ib + 13] = 0x00;
+        d[ib + 14..ib + 16].copy_from_slice(&SAMPLE_PARA.to_le_bytes());
+        d[ib + 16..ib + 20].copy_from_slice(&SAMPLE_LEN.to_le_bytes());
+        // loop_start / loop_end remain 0 (no loop)
+        d[ib + 28] = 64; // default volume
+        // flags = 0: no loop, 8-bit mono
+        d[ib + 32..ib + 36].copy_from_slice(&8363u32.to_le_bytes()); // c2spd
+        d[ib + 76..ib + 80].copy_from_slice(b"SCRS"); // instrument magic
+
+        // ── Pattern block (at 0x0C0) ──────────────────────────────────────
+        let pb = PAT_PARA as usize * 16;
+        // Row 0: ch 0 — note C-5 (0x50), instrument 1, no volume, no effect
+        //   marker 0x80 = bit7 (note+instr), channel 0
+        let mut packed: Vec<u8> = vec![0x80, 0x50, 0x01, 0x00]; // row 0
+        packed.extend(std::iter::repeat_n(0x00, 63)); // rows 1–63 (empty)
+        d[pb..pb + 2].copy_from_slice(&(packed.len() as u16).to_le_bytes());
+        d[pb + 2..pb + 2 + packed.len()].copy_from_slice(&packed);
+
+        // ── Sample data (at 0x110) ────────────────────────────────────────
+        // Unsigned 8-bit PCM: 0x80 = silence (centre)
+        let sp = SAMPLE_PARA as usize * 16;
+        d[sp..sp + SAMPLE_LEN as usize].fill(0x80);
+
+        d
+    }
+
+    // ── Synthetic fixture tests (always run, no external files) ──────────
+
+    #[test]
+    fn parse_minimal_s3m() {
+        let module = parse(&build_minimal_s3m()).expect("parse minimal S3M");
+        assert_eq!(module.channel_count, 2);
+        assert_eq!(module.default_tempo, 6);
+        assert_eq!(module.default_bpm, 125);
+        assert_eq!(module.song_length, 1);
+        assert_eq!(module.instruments.len(), 1);
+        assert_eq!(module.patterns.len(), 1);
     }
 
     #[test]
+    fn minimal_instrument_has_pcm() {
+        let module = parse(&build_minimal_s3m()).unwrap();
+        let sample = &module.instruments[0].samples[0];
+        // 16 unsigned-8-bit silence frames → 16 signed-i16 zeros after conversion
+        assert_eq!(sample.data.len(), 16);
+        assert!(
+            sample.data.iter().all(|&s| s == 0),
+            "silence should be all-zero i16"
+        );
+        assert_eq!(sample.volume, 64);
+        assert_eq!((sample.relative_note, sample.finetune), (0, 0)); // c2spd 8363 = no correction
+    }
+
+    #[test]
+    fn minimal_pattern_has_note_c5() {
+        let module = parse(&build_minimal_s3m()).unwrap();
+        // Row 0, channel 0: C-5 (S3M 0x50 → XM note 61)
+        assert_eq!(module.patterns[0].rows[0][0].note, XmNote::On(61));
+        assert_eq!(module.patterns[0].rows[0][0].instrument, 1);
+        // Row 1 and channel 1 should be empty
+        assert_eq!(module.patterns[0].rows[1][0].note, XmNote::None);
+        assert_eq!(module.patterns[0].rows[0][1].note, XmNote::None);
+    }
+
+    #[test]
+    fn minimal_panning_from_channel_settings() {
+        // Ch 0 = left PCM (setting 0x00) → pan = 0; ch 1 = right PCM (0x08) → pan = 255.
+        // Instruments carry the pan table's ch-0 entry (= 0) by default.
+        let module = parse(&build_minimal_s3m()).unwrap();
+        assert_eq!(module.instruments[0].samples[0].panning, 0);
+    }
+
+    // ── Optional integration tests (require OMF2097 files in /tmp) ────────
+    //
+    // Extract `assets/examples/One Must Fall 2097.zip` to /tmp first:
+    //   unzip -o "assets/examples/One Must Fall 2097.zip" "*.S3M" -d /tmp
+    // Then run with: cargo test -p tracker-engine -- --ignored
+
+    #[test]
+    #[ignore = "requires /tmp/03-MENU.S3M from assets/examples/One Must Fall 2097.zip"]
     fn parse_omf_menu() {
-        let data = load(MENU);
+        let data = std::fs::read("/tmp/03-MENU.S3M").expect("/tmp/03-MENU.S3M");
         let module = parse(&data).expect("parse 03-MENU.S3M");
         assert_eq!(module.channel_count, 6);
         assert_eq!(module.default_tempo, 6);
@@ -717,8 +844,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires /tmp/03-MENU.S3M from assets/examples/One Must Fall 2097.zip"]
     fn omf_menu_instruments_have_samples() {
-        let data = load(MENU);
+        let data = std::fs::read("/tmp/03-MENU.S3M").expect("/tmp/03-MENU.S3M");
         let module = parse(&data).unwrap();
         let non_empty = module
             .instruments
@@ -732,8 +860,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires /tmp/03-MENU.S3M from assets/examples/One Must Fall 2097.zip"]
     fn omf_menu_patterns_have_notes() {
-        let data = load(MENU);
+        let data = std::fs::read("/tmp/03-MENU.S3M").expect("/tmp/03-MENU.S3M");
         let module = parse(&data).unwrap();
         let notes: usize = module
             .patterns
