@@ -7,6 +7,7 @@ pub mod dsp;
 pub mod gus;
 pub mod modfile;
 pub mod player;
+pub mod s3m;
 pub mod synth;
 pub mod xm;
 
