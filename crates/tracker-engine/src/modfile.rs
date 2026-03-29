@@ -21,7 +21,7 @@
 //! | Effects 0–F | mapped 1-to-1 (most match XM); 9xx = sample offset |
 //! | Amiga PAL frequency reference | converted to XM linear pitch via log₂ |
 
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 
 use anyhow::{Context as _, bail};
 
