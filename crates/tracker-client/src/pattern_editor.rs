@@ -193,13 +193,22 @@ impl PatternEditor {
         self.handle_entry(ui, pattern, row_count);
 
         let font_id = FontId::new(8.0, FontFamily::Name("tracker".into()));
-        // Minimum width required to display all channels; expand to fill the
-        // viewport so the background covers the whole central panel when there
-        // are fewer channels than can fill the window.
-        let channels_w = ROWNUM_W + channel_count as f32 * CHANNEL_W;
-        let content_w = channels_w.max(ui.available_width());
-        // Similarly, ensure the painter fills the full viewport height so the
-        // black background extends past the last row when the pattern is short.
+
+        // Responsive channel width: divide available horizontal space evenly
+        // across all channels, but never shrink below the fixed minimum so the
+        // cell content stays readable at 8 px font.
+        let avail_w = ui.available_width();
+        let channel_w = if channel_count > 0 {
+            ((avail_w - ROWNUM_W) / channel_count as f32).max(CHANNEL_W)
+        } else {
+            CHANNEL_W
+        };
+        // Scale factor for sub-column positions and widths.
+        let scale = channel_w / CHANNEL_W;
+
+        let content_w = ROWNUM_W + channel_count as f32 * channel_w;
+        // Ensure the painter fills the full viewport height so the black
+        // background extends past the last row when the pattern is short.
         let rows_h = HEADER_H + row_count as f32 * ROW_H;
         let content_h = rows_h.max(ui.available_height());
 
@@ -220,10 +229,10 @@ impl PatternEditor {
 
                 // Channel headers
                 for ch in 0..channel_count {
-                    let ch_left = o.x + ROWNUM_W + ch as f32 * CHANNEL_W;
+                    let ch_left = o.x + ROWNUM_W + ch as f32 * channel_w;
                     let hdr = Rect::from_min_size(
                         Pos2::new(ch_left, o.y),
-                        Vec2::new(CHANNEL_W - SEP_W, HEADER_H),
+                        Vec2::new(channel_w - SEP_W, HEADER_H),
                     );
                     painter.rect_filled(hdr, 0.0, C_HEADER_BG);
                     // Lighter top edge for a subtle depth effect.
@@ -242,7 +251,7 @@ impl PatternEditor {
                     // Vertical separator to the right of this channel.
                     painter.rect_filled(
                         Rect::from_min_size(
-                            Pos2::new(ch_left + CHANNEL_W - SEP_W, o.y),
+                            Pos2::new(ch_left + channel_w - SEP_W, o.y),
                             Vec2::new(SEP_W, HEADER_H),
                         ),
                         0.0,
@@ -284,7 +293,7 @@ impl PatternEditor {
                         painter.rect_filled(
                             Rect::from_min_size(
                                 Pos2::new(o.x + ROWNUM_W, row_top),
-                                Vec2::new(channel_count as f32 * CHANNEL_W, ROW_H),
+                                Vec2::new(channel_count as f32 * channel_w, ROW_H),
                             ),
                             0.0,
                             C_CURSOR_ROW,
@@ -293,7 +302,7 @@ impl PatternEditor {
 
                     // Channel cells
                     for ch in 0..channel_count {
-                        let ch_left = o.x + ROWNUM_W + ch as f32 * CHANNEL_W;
+                        let ch_left = o.x + ROWNUM_W + ch as f32 * channel_w;
 
                         // Beat-row background for non-cursor rows
                         if !is_cursor {
@@ -307,38 +316,39 @@ impl PatternEditor {
                             painter.rect_filled(
                                 Rect::from_min_size(
                                     Pos2::new(ch_left, row_top),
-                                    Vec2::new(CHANNEL_W - SEP_W, ROW_H),
+                                    Vec2::new(channel_w - SEP_W, ROW_H),
                                 ),
                                 0.0,
                                 cell_bg,
                             );
                         }
 
-                        // Cursor-cell highlight
+                        // Cursor-cell highlight (sub-column positions scale with channel_w)
                         if is_cursor && ch == self.cursor_channel {
-                            let sub_x = ch_left + self.cursor_col.x_offset();
+                            let sub_x = ch_left + self.cursor_col.x_offset() * scale;
                             painter.rect_filled(
                                 Rect::from_min_size(
                                     Pos2::new(sub_x, row_top),
-                                    Vec2::new(self.cursor_col.width(), ROW_H),
+                                    Vec2::new(self.cursor_col.width() * scale, ROW_H),
                                 ),
                                 0.0,
                                 C_CURSOR_CELL,
                             );
                         }
 
-                        // Cell content
+                        // Cell content (sub-column text positions scale with channel_w)
                         paint_cell(
                             &painter,
                             &font_id,
                             Pos2::new(ch_left, row_top),
                             &pattern.rows[row][ch],
+                            scale,
                         );
 
                         // Vertical channel separator
                         painter.rect_filled(
                             Rect::from_min_size(
-                                Pos2::new(ch_left + CHANNEL_W - SEP_W, row_top),
+                                Pos2::new(ch_left + channel_w - SEP_W, row_top),
                                 Vec2::new(SEP_W, ROW_H),
                             ),
                             0.0,
@@ -355,11 +365,14 @@ impl PatternEditor {
                     let rel_x = ptr.x - o.x - ROWNUM_W;
                     if rel_y >= 0.0 && rel_x >= 0.0 {
                         let r = (rel_y / ROW_H) as usize;
-                        let c = (rel_x / CHANNEL_W) as usize;
+                        let c = (rel_x / channel_w) as usize;
                         if r < row_count && c < channel_count {
                             self.cursor_row = r;
                             self.cursor_channel = c;
-                            self.cursor_col = subcol_at_x(rel_x - c as f32 * CHANNEL_W);
+                            // Divide pixel offset within the channel by scale so
+                            // subcol_at_x sees nominal (unscaled) coordinates.
+                            let x_in_ch = (rel_x - c as f32 * channel_w) / scale;
+                            self.cursor_col = subcol_at_x(x_in_ch);
                         }
                     }
                 }
@@ -563,7 +576,10 @@ impl PatternEditor {
 
 // ── Cell rendering ────────────────────────────────────────────────────────────
 
-fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &XmCell) {
+fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &XmCell, scale: f32) {
+    // Helper: scale a nominal sub-column x offset by the channel scale factor.
+    let sx = |x: f32| origin.x + x * scale;
+
     // Note
     let (note_str, note_fg) = match &cell.note {
         XmNote::None => ("···".to_string(), C_EMPTY),
@@ -571,7 +587,7 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
         XmNote::On(n) => (note_name(*n), C_NOTE),
     };
     painter.text(
-        Pos2::new(origin.x + NOTE_X, origin.y),
+        Pos2::new(sx(NOTE_X), origin.y),
         Align2::LEFT_TOP,
         note_str,
         font_id.clone(),
@@ -581,14 +597,14 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
     // Instrument (split into Hi / Lo digit for sub-column cursor granularity)
     if cell.instrument == 0 {
         painter.text(
-            Pos2::new(origin.x + INS_HI_X, origin.y),
+            Pos2::new(sx(INS_HI_X), origin.y),
             Align2::LEFT_TOP,
             "·",
             font_id.clone(),
             C_EMPTY,
         );
         painter.text(
-            Pos2::new(origin.x + INS_LO_X, origin.y),
+            Pos2::new(sx(INS_LO_X), origin.y),
             Align2::LEFT_TOP,
             "·",
             font_id.clone(),
@@ -597,14 +613,14 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
     } else {
         let s = format!("{:02X}", cell.instrument);
         painter.text(
-            Pos2::new(origin.x + INS_HI_X, origin.y),
+            Pos2::new(sx(INS_HI_X), origin.y),
             Align2::LEFT_TOP,
             &s[0..1],
             font_id.clone(),
             C_INST,
         );
         painter.text(
-            Pos2::new(origin.x + INS_LO_X, origin.y),
+            Pos2::new(sx(INS_LO_X), origin.y),
             Align2::LEFT_TOP,
             &s[1..2],
             font_id.clone(),
@@ -615,14 +631,14 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
     // Volume
     if cell.volume == 0 {
         painter.text(
-            Pos2::new(origin.x + VOL_HI_X, origin.y),
+            Pos2::new(sx(VOL_HI_X), origin.y),
             Align2::LEFT_TOP,
             "·",
             font_id.clone(),
             C_EMPTY,
         );
         painter.text(
-            Pos2::new(origin.x + VOL_LO_X, origin.y),
+            Pos2::new(sx(VOL_LO_X), origin.y),
             Align2::LEFT_TOP,
             "·",
             font_id.clone(),
@@ -631,14 +647,14 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
     } else {
         let s = format!("{:02X}", cell.volume);
         painter.text(
-            Pos2::new(origin.x + VOL_HI_X, origin.y),
+            Pos2::new(sx(VOL_HI_X), origin.y),
             Align2::LEFT_TOP,
             &s[0..1],
             font_id.clone(),
             C_VOL,
         );
         painter.text(
-            Pos2::new(origin.x + VOL_LO_X, origin.y),
+            Pos2::new(sx(VOL_LO_X), origin.y),
             Align2::LEFT_TOP,
             &s[1..2],
             font_id.clone(),
@@ -650,7 +666,7 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
     if cell.effect == 0 && cell.effect_param == 0 {
         for x in [FX_LTR_X, OP_HI_X, OP_LO_X] {
             painter.text(
-                Pos2::new(origin.x + x, origin.y),
+                Pos2::new(sx(x), origin.y),
                 Align2::LEFT_TOP,
                 "·",
                 font_id.clone(),
@@ -660,21 +676,21 @@ fn paint_cell(painter: &egui::Painter, font_id: &FontId, origin: Pos2, cell: &Xm
     } else {
         let param = format!("{:02X}", cell.effect_param);
         painter.text(
-            Pos2::new(origin.x + FX_LTR_X, origin.y),
+            Pos2::new(sx(FX_LTR_X), origin.y),
             Align2::LEFT_TOP,
             effect_char(cell.effect).to_string(),
             font_id.clone(),
             C_FX_LTR,
         );
         painter.text(
-            Pos2::new(origin.x + OP_HI_X, origin.y),
+            Pos2::new(sx(OP_HI_X), origin.y),
             Align2::LEFT_TOP,
             &param[0..1],
             font_id.clone(),
             C_FX_OP,
         );
         painter.text(
-            Pos2::new(origin.x + OP_LO_X, origin.y),
+            Pos2::new(sx(OP_LO_X), origin.y),
             Align2::LEFT_TOP,
             &param[1..2],
             font_id.clone(),
