@@ -4,3 +4,7 @@ poc/**/pkg
 poc/**/dist
 # SF2 files in poc/ are local symlinks; the canonical copy lives in assets/soundfonts/
 poc/**/*.sf2
+
+# Evaluation assets — not for distribution (unknown or restricted license)
+# "One Must Fall 2097" in-game music is used locally for playback testing only.
+assets/examples/
