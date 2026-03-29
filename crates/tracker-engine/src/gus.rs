@@ -253,7 +253,7 @@ fn loop_params(hdr: &WaveHdr) -> (u32, u32, SampleLoopType) {
 /// (in millihertz) contains it.  Falls back to the nearest sample.
 fn build_note_map(hdrs: &[WaveHdr]) -> [u8; 96] {
     let mut map = [0u8; 96];
-    for note_idx in 0..96usize {
+    for (note_idx, slot) in map.iter_mut().enumerate() {
         // XM pitch for note index = note_idx (0-indexed semitone from C-0).
         // pitch_to_freq(n) = 8363 * 2^((n-60)/12)
         let pitch = note_idx as f64;
@@ -265,7 +265,6 @@ fn build_note_map(hdrs: &[WaveHdr]) -> [u8; 96] {
         for (si, hdr) in hdrs.iter().enumerate() {
             if freq_mhz >= hdr.low_freq && freq_mhz <= hdr.high_freq {
                 best_idx = si;
-                let _ = best_dist;
                 break;
             }
             // Not in range — compute distance to the nearest boundary.
@@ -279,7 +278,7 @@ fn build_note_map(hdrs: &[WaveHdr]) -> [u8; 96] {
                 best_idx = si;
             }
         }
-        map[note_idx] = best_idx.min(255) as u8;
+        *slot = best_idx.min(255) as u8;
     }
     map
 }

@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn nibble_finetune_negative() {
         assert_eq!(nibble_finetune(8), -8 * 16); // = -128
-        assert_eq!(nibble_finetune(15), -1 * 16); // = -16
+        assert_eq!(nibble_finetune(15), -16);
     }
 
     #[test]

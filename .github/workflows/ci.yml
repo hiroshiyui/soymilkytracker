@@ -35,7 +35,8 @@ jobs:
             libasound2-dev \
             libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
             libxkbcommon-dev \
-            pkg-config
+            pkg-config \
+            freepats
 
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings

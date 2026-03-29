@@ -457,15 +457,13 @@ impl Player {
         };
 
         // Instrument change without a new note: reset envelope only.
-        if has_inst && !has_note {
-            if instr_idx < self.module.instruments.len() {
-                let ch = &mut self.channels[ch_idx];
-                ch.instrument_idx = instr_idx;
-                ch.env_vol_tick = 0;
-                ch.env_vol = 1.0;
-                ch.fadeout = 1.0;
-                ch.key_off = false;
-            }
+        if has_inst && !has_note && instr_idx < self.module.instruments.len() {
+            let ch = &mut self.channels[ch_idx];
+            ch.instrument_idx = instr_idx;
+            ch.env_vol_tick = 0;
+            ch.env_vol = 1.0;
+            ch.fadeout = 1.0;
+            ch.key_off = false;
         }
 
         if has_note {
@@ -1093,13 +1091,11 @@ fn advance_pos(ch: &mut Channel, sample: &XmSample) -> bool {
                     } else {
                         break;
                     }
+                } else if p < ls {
+                    p = 2.0 * ls - p;
+                    ch.ping_pong_fwd = true;
                 } else {
-                    if p < ls {
-                        p = 2.0 * ls - p;
-                        ch.ping_pong_fwd = true;
-                    } else {
-                        break;
-                    }
+                    break;
                 }
             }
             ch.pos = p.clamp(ls, le - f64::EPSILON);
@@ -1125,10 +1121,10 @@ fn eval_vol_envelope(env: &XmEnvelope, tick: u32, key_off: bool) -> (f32, u32) {
     // Sustain: freeze at the sustain point while the note is held.
     if env.sustain && !key_off {
         let si = env.sustain_point as usize;
-        if let Some(sp) = pts.get(si) {
-            if tick >= sp.tick as u32 {
-                return (sp.value as f32 / 64.0, tick); // hold — do not advance
-            }
+        if let Some(sp) = pts.get(si)
+            && tick >= sp.tick as u32
+        {
+            return (sp.value as f32 / 64.0, tick); // hold — do not advance
         }
     }
 

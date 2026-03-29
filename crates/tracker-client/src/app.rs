@@ -18,7 +18,7 @@ pub fn install_fonts(ctx: &egui::Context) {
 
     fonts.font_data.insert(
         FONT_TRACKER.to_owned(),
-        egui::FontData::from_static(IBM_EGA_8X8).into(),
+        egui::FontData::from_static(IBM_EGA_8X8),
     );
 
     // Make the tracker font the first choice for both Proportional and Monospace

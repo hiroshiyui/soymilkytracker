@@ -185,7 +185,7 @@ impl TrackerAudio {
 
     /// Returns `true` while the player is advancing.
     pub fn is_playing(&self) -> bool {
-        self.player.as_ref().map_or(false, |p| {
+        self.player.as_ref().is_some_and(|p| {
             #[cfg(not(target_arch = "wasm32"))]
             {
                 p.lock().unwrap().is_playing()
