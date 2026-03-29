@@ -147,6 +147,10 @@ pub struct PatternEditor {
     pub cursor_col: SubCol,
     /// When `true`, draw the cursor row in record-mode colour.
     pub record_mode: bool,
+    /// Base octave for note entry (0–7).  Default `4`.
+    pub octave: u8,
+    /// Number of rows the cursor advances after entering a note (0 = no advance).
+    pub step: usize,
     /// Request a scroll-to-cursor on the next frame.
     scroll_to_cursor: bool,
 }
@@ -158,6 +162,8 @@ impl Default for PatternEditor {
             cursor_channel: 0,
             cursor_col: SubCol::Note,
             record_mode: false,
+            octave: 4,
+            step: 1,
             scroll_to_cursor: false,
         }
     }
@@ -169,7 +175,7 @@ impl PatternEditor {
     }
 
     /// Render the pattern editor for `pattern` inside `ui`.
-    pub fn show(&mut self, ui: &mut egui::Ui, pattern: &XmPattern) {
+    pub fn show(&mut self, ui: &mut egui::Ui, pattern: &mut XmPattern) {
         let row_count = pattern.rows.len();
         let channel_count = pattern.rows.first().map(|r| r.len()).unwrap_or(0);
 
@@ -184,6 +190,7 @@ impl PatternEditor {
 
         // Process keyboard input before rendering.
         self.handle_keys(ui, row_count, channel_count);
+        self.handle_entry(ui, pattern, row_count);
 
         let font_id = FontId::new(8.0, FontFamily::Name("tracker".into()));
         let content_w = ROWNUM_W + channel_count as f32 * CHANNEL_W;
@@ -362,6 +369,108 @@ impl PatternEditor {
                     );
                 }
             });
+    }
+
+    /// Dispatch note / data entry key events into the pattern.
+    fn handle_entry(&mut self, ui: &mut egui::Ui, pattern: &mut XmPattern, row_count: usize) {
+        let events: Vec<egui::Event> = ui.input(|i| i.events.clone());
+        for event in &events {
+            if let egui::Event::Key {
+                key,
+                pressed: true,
+                repeat: false,
+                modifiers,
+                ..
+            } = event
+            {
+                if modifiers.ctrl || modifiers.alt || modifiers.mac_cmd {
+                    continue;
+                }
+                self.handle_key_event(*key, pattern, row_count);
+            }
+        }
+    }
+
+    fn handle_key_event(&mut self, key: egui::Key, pattern: &mut XmPattern, row_count: usize) {
+        let cell = &mut pattern.rows[self.cursor_row][self.cursor_channel];
+
+        match self.cursor_col {
+            SubCol::Note => {
+                if key == egui::Key::Delete {
+                    *cell = XmCell::default();
+                    self.advance_row(row_count);
+                    return;
+                }
+                if key == egui::Key::Num1 {
+                    cell.note = XmNote::Off;
+                    self.advance_row(row_count);
+                    return;
+                }
+                if let Some(note) = qwerty_to_note(key, self.octave) {
+                    cell.note = XmNote::On(note);
+                    self.advance_row(row_count);
+                }
+            }
+            SubCol::InsHi => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    let lo = cell.instrument & 0x0F;
+                    cell.instrument = (n << 4) | lo;
+                    self.cursor_col = SubCol::InsLo;
+                }
+            }
+            SubCol::InsLo => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    let hi = cell.instrument & 0xF0;
+                    cell.instrument = hi | n;
+                    self.cursor_col = SubCol::VolHi;
+                    self.advance_row(row_count);
+                }
+            }
+            SubCol::VolHi => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    let lo = cell.volume & 0x0F;
+                    cell.volume = (n << 4) | lo;
+                    self.cursor_col = SubCol::VolLo;
+                }
+            }
+            SubCol::VolLo => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    let hi = cell.volume & 0xF0;
+                    cell.volume = hi | n;
+                    self.cursor_col = SubCol::FxLtr;
+                    self.advance_row(row_count);
+                }
+            }
+            SubCol::FxLtr => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    cell.effect = n;
+                    self.cursor_col = SubCol::OpHi;
+                }
+            }
+            SubCol::OpHi => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    let lo = cell.effect_param & 0x0F;
+                    cell.effect_param = (n << 4) | lo;
+                    self.cursor_col = SubCol::OpLo;
+                }
+            }
+            SubCol::OpLo => {
+                if let Some(n) = key_to_hex_nibble(key) {
+                    let hi = cell.effect_param & 0xF0;
+                    cell.effect_param = hi | n;
+                    self.cursor_col = SubCol::Note;
+                    self.advance_row(row_count);
+                }
+            }
+        }
+    }
+
+    /// Advance the cursor by `self.step` rows, wrapping around.  No-op when `step == 0`.
+    fn advance_row(&mut self, row_count: usize) {
+        if self.step > 0 && row_count > 0 {
+            self.cursor_row = (self.cursor_row + self.step) % row_count;
+            self.scroll_to_cursor = true;
+        }
     }
 
     fn handle_keys(&mut self, ui: &mut egui::Ui, row_count: usize, channel_count: usize) {
@@ -613,6 +722,90 @@ fn effect_char(effect: u8) -> char {
     }
 }
 
+/// Map a QWERTY key to a 1-indexed XM note number using the MilkyTracker piano layout.
+///
+/// Lower row (Z–M + `,./;`) covers `octave` and `octave+1`.
+/// Upper row (Q–P + number-row sharps) covers `octave+1` and `octave+2`.
+/// Returns `None` for keys that are not part of the piano layout.
+pub fn qwerty_to_note(key: egui::Key, octave: u8) -> Option<u8> {
+    // (semitone 0–11, octave offset relative to base octave)
+    let (semitone, oct_off): (u8, u8) = match key {
+        // Lower row — white and black keys
+        egui::Key::Z => (0, 0),  // C
+        egui::Key::S => (1, 0),  // C#
+        egui::Key::X => (2, 0),  // D
+        egui::Key::D => (3, 0),  // D#
+        egui::Key::C => (4, 0),  // E
+        egui::Key::V => (5, 0),  // F
+        egui::Key::G => (6, 0),  // F#
+        egui::Key::B => (7, 0),  // G
+        egui::Key::H => (8, 0),  // G#
+        egui::Key::N => (9, 0),  // A
+        egui::Key::J => (10, 0), // A#
+        egui::Key::M => (11, 0), // B
+        // Lower row overflow into octave+1
+        egui::Key::Comma => (0, 1),     // C
+        egui::Key::L => (1, 1),         // C#
+        egui::Key::Period => (2, 1),    // D
+        egui::Key::Semicolon => (3, 1), // D#
+        egui::Key::Slash => (4, 1),     // E
+        // Upper row — white and black keys at octave+1
+        egui::Key::Q => (0, 1),     // C
+        egui::Key::Num2 => (1, 1),  // C#
+        egui::Key::W => (2, 1),     // D
+        egui::Key::Num3 => (3, 1),  // D#
+        egui::Key::E => (4, 1),     // E
+        egui::Key::R => (5, 1),     // F
+        egui::Key::Num5 => (6, 1),  // F#
+        egui::Key::T => (7, 1),     // G
+        egui::Key::Num6 => (8, 1),  // G#
+        egui::Key::Y => (9, 1),     // A
+        egui::Key::Num7 => (10, 1), // A#
+        egui::Key::U => (11, 1),    // B
+        // Upper row overflow into octave+2
+        egui::Key::I => (0, 2),            // C
+        egui::Key::Num9 => (1, 2),         // C#
+        egui::Key::O => (2, 2),            // D
+        egui::Key::Num0 => (3, 2),         // D#
+        egui::Key::P => (4, 2),            // E
+        egui::Key::OpenBracket => (5, 2),  // F
+        egui::Key::Minus => (6, 2),        // F#
+        egui::Key::CloseBracket => (7, 2), // G
+        _ => return None,
+    };
+    let note_oct = octave as i32 + oct_off as i32;
+    let note_1indexed = note_oct * 12 + semitone as i32 + 1;
+    if (1..=96).contains(&note_1indexed) {
+        Some(note_1indexed as u8)
+    } else {
+        None
+    }
+}
+
+/// Map a key to a hex nibble (0x0–0xF).  Keys 0–9 map to 0–9; A–F map to 10–15.
+/// Returns `None` for any other key.
+pub fn key_to_hex_nibble(key: egui::Key) -> Option<u8> {
+    match key {
+        egui::Key::Num0 => Some(0x0),
+        egui::Key::Num1 => Some(0x1),
+        egui::Key::Num2 => Some(0x2),
+        egui::Key::Num3 => Some(0x3),
+        egui::Key::Num4 => Some(0x4),
+        egui::Key::Num5 => Some(0x5),
+        egui::Key::Num6 => Some(0x6),
+        egui::Key::Num7 => Some(0x7),
+        egui::Key::Num8 => Some(0x8),
+        egui::Key::Num9 => Some(0x9),
+        egui::Key::A => Some(0xA),
+        egui::Key::B => Some(0xB),
+        egui::Key::C => Some(0xC),
+        egui::Key::D => Some(0xD),
+        egui::Key::E => Some(0xE),
+        egui::Key::F => Some(0xF),
+        _ => None,
+    }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -677,5 +870,63 @@ mod tests {
     fn subcol_stops_at_edges() {
         assert_eq!(SubCol::Note.prev(), SubCol::Note);
         assert_eq!(SubCol::OpLo.next(), SubCol::OpLo);
+    }
+
+    // ── qwerty_to_note ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn qwerty_z_is_c_at_octave() {
+        // Z = C at base octave; octave 4 → C-4 = note 49
+        assert_eq!(qwerty_to_note(egui::Key::Z, 4), Some(49));
+    }
+
+    #[test]
+    fn qwerty_s_is_csharp_at_octave() {
+        // S = C# at base octave; octave 4 → C#4 = note 50
+        assert_eq!(qwerty_to_note(egui::Key::S, 4), Some(50));
+    }
+
+    #[test]
+    fn qwerty_q_is_c_at_octave_plus_one() {
+        // Q = C at octave+1; octave 4 → C-5 = note 61
+        assert_eq!(qwerty_to_note(egui::Key::Q, 4), Some(61));
+    }
+
+    #[test]
+    fn qwerty_i_is_c_at_octave_plus_two() {
+        // I = C at octave+2; octave 4 → C-6 = note 73
+        assert_eq!(qwerty_to_note(egui::Key::I, 4), Some(73));
+    }
+
+    #[test]
+    fn qwerty_out_of_range_returns_none() {
+        // Octave 7: I = C-9, note = 7*12+2*12+0+1 = 109 → out of range
+        assert_eq!(qwerty_to_note(egui::Key::I, 7), None);
+    }
+
+    #[test]
+    fn qwerty_unrelated_key_returns_none() {
+        assert_eq!(qwerty_to_note(egui::Key::F1, 4), None);
+        assert_eq!(qwerty_to_note(egui::Key::Enter, 4), None);
+    }
+
+    // ── key_to_hex_nibble ──────────────────────────────────────────────────────
+
+    #[test]
+    fn hex_nibble_digits() {
+        assert_eq!(key_to_hex_nibble(egui::Key::Num0), Some(0x0));
+        assert_eq!(key_to_hex_nibble(egui::Key::Num9), Some(0x9));
+    }
+
+    #[test]
+    fn hex_nibble_letters() {
+        assert_eq!(key_to_hex_nibble(egui::Key::A), Some(0xA));
+        assert_eq!(key_to_hex_nibble(egui::Key::F), Some(0xF));
+    }
+
+    #[test]
+    fn hex_nibble_non_hex_returns_none() {
+        assert_eq!(key_to_hex_nibble(egui::Key::Z), None);
+        assert_eq!(key_to_hex_nibble(egui::Key::Tab), None);
     }
 }

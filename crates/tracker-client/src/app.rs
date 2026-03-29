@@ -72,10 +72,12 @@ impl eframe::App for TrackerApp {
                 ui.label("SoymilkyTracker");
                 ui.separator();
                 ui.label(format!(
-                    "Row {:02X}  Ch {}  {}",
+                    "Row {:02X}  Ch {}  {}  Oct {}  Stp {}",
                     self.editor.cursor_row,
                     self.editor.cursor_channel + 1,
                     subcol_label(self.editor.cursor_col),
+                    self.editor.octave,
+                    self.editor.step,
                 ));
             });
         });
@@ -84,7 +86,7 @@ impl eframe::App for TrackerApp {
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
             .show(ctx, |ui| {
-                self.editor.show(ui, &self.pattern);
+                self.editor.show(ui, &mut self.pattern);
             });
     }
 }

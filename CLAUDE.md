@@ -132,6 +132,12 @@ cargo run                  # in poc/cpal-native/
 trunk serve                # in poc/wasm-audio/, poc/egui-grid/, poc/oxisynth-wasm/
 ```
 
+## While Coding
+
+- When coding, provide sufficient comments to help other developers understand the logic.
+- **Rust** — `rustfmt` runs automatically on every `*.rs` file after each write or edit. `cargo clippy` must also pass clean.
+
+
 ## License
 
 GNU General Public License v3.0 or later (GPL-3.0-or-later). All new source files should include the following SPDX header:
