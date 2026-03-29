@@ -29,11 +29,15 @@ registered in egui; pattern editor grid (`PatternEditor`, 87 px/channel, MilkyTr
 palette, ScrollArea, click-to-position, navigation keys); QWERTY piano keyboard entry
 (`qwerty_to_note`, `key_to_hex_nibble`, key-off, clear cell, step advance). 17 unit tests.
 
-- [ ] Implement instrument list panel
-- [ ] Implement song arranger / order list
+Done (2026-03-29): multi-panel application layout (title bar · controls row · menu buttons ·
+instrument panel · pattern editor); instrument list panel (pixel-art rows, +/− add/remove, click
+to select); sample list panel (samples of selected instrument); song order list controls
+(◀/▶ navigate, +/− change pattern, Ins/Del edit entries); transport controls (▶ Play Song,
+▷ Play Pat, ■ Stop, ● Rec) wired to `TrackerAudio`; BPM/TPB/Step/Oct controls with +/− buttons;
+pattern expand ×2 / shrink /2; live playback position display (Ord/Row/BPM); `TrackerApp` holds
+full `XmModule` + `TrackerAudio`.
+
 - [ ] Implement sample waveform viewer and basic editor (loop points, trim)
-- [ ] Implement transport controls (play song, play pattern, record mode)
-- [ ] Implement BPM / tempo / speed controls
 - [ ] Implement undo/redo history
 - [ ] Support custom instrument file upload and hot-loading into the instrument list (SF2, SF3, GUS `.pat`)
 - [ ] Implement keyboard shortcut overlay / help panel (to eliminate need to memorize commands)

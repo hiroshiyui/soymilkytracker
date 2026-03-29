@@ -44,6 +44,17 @@ the egui family name `"tracker"` (constant `FONT_TRACKER`) and sets it as the de
 Proportional and Monospace families. Call once in `TrackerApp::new`. Use
 `FontId::new(8.0, FontFamily::Name("tracker".into()))` for pixel-exact 8 px rendering.
 
+**`TrackerApp` (`tracker-client::app`):**
+`crates/tracker-client/src/app.rs` — root application state.
+
+- Owns `module: XmModule` (song being edited), `audio: TrackerAudio`, `editor: PatternEditor`, plus `current_pattern_idx`, `current_order_idx`, `selected_instrument`, `record_mode`.
+- `eframe::App::update` assembles five stacked `TopBottomPanel`s: title bar → controls row → menu buttons → instrument panel → `CentralPanel` (pattern editor).
+- **Title bar**: editable song name (`module.name`); live playback position (Ord/Row/BPM) drawn from `audio.position()` with `ctx.request_repaint()` while playing; cursor info.
+- **Controls row**: order list section (◀/▶ navigate, +/− change pattern at position, Ins/Del edit entries); speed section (BPM/TPB/Step/Oct all wired to `module` and `editor` fields); pattern section (Pat index +/−, Rows display, ×2//2 `expand_pattern`/`shrink_pattern`).
+- **Menu buttons**: ▶ Play Song (`audio.load` + `audio.seek` + `audio.play`), ▷ Play Pat (single-pattern loop), ■ Stop, ● Rec toggle; stub buttons for Load/Save/Smp.Ed./Ins.Ed./Config/About.
+- **Instrument panel**: pixel-art rows (index in `#80E0FF`, name in white/dim); +/− add/remove; click-to-select. Right side: samples of selected instrument.
+- `make_audio()` cfg-gates `NativeAudioBackend` (native) vs `WasmAudioBackend` (WASM).
+
 **Pattern editor widget (`tracker-client`):**
 `crates/tracker-client/src/pattern_editor.rs` — `PatternEditor` is the main egui widget.
 

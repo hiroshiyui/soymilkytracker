@@ -67,6 +67,7 @@ Early development — **Phase 1 complete, Phase 2 underway**. Not yet usable as 
 - Pixel-art UI mockups (`doc/ui-mockups.md`) — MilkyTracker-faithful wireframes, colour palette, and egui Painter implementation notes for all panels
 - **Pattern editor grid** (`tracker-client::pattern_editor`) — `PatternEditor` egui widget with the full MilkyTracker classic layout: 87 px/channel (Note + Inst + Vol + Fx), per-field semantic colours, beat-row highlighting, cursor-row band, bidirectional scrolling, click-to-position, arrow/Tab/Home/End/PgUp/PgDn keyboard navigation
 - **QWERTY piano keyboard note entry** — MilkyTracker layout (Z-row = base octave, Q-row = octave+1, upper overflow = octave+2); `Num1` = key-off, `Delete` = clear cell; hex-digit entry for instrument/volume/effect; configurable octave and step; 17 unit tests
+- **Multi-panel UI layout** — title bar (editable song name, live playback status); controls row (order list navigation, BPM/TPB/Step/Oct +/− controls, pattern index and row-count with ×2//2 resize); menu button row (▶ Play Song, ▷ Play Pat, ■ Stop, ● Rec) wired to `TrackerAudio`; instrument list panel (pixel-art rows, +/− add/remove, click-to-select); sample list for the selected instrument; `TrackerApp` owns the full `XmModule` and `TrackerAudio`
 - Four confirmed proof-of-concept spikes (WASM AudioWorklet, egui tracker grid, oxisynth SF2 synthesis, cpal native audio)
 
 Contributions and feedback are welcome, but expect significant breaking changes at any stage.
