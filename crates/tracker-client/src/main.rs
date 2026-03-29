@@ -5,7 +5,11 @@ fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     eframe::run_native(
         "SoymilkyTracker",
-        eframe::NativeOptions::default(),
+        eframe::NativeOptions {
+            // Start maximised — fills the desktop without going fullscreen.
+            viewport: egui::ViewportBuilder::default().with_maximized(true),
+            ..Default::default()
+        },
         Box::new(|cc| Ok(Box::new(tracker_client::app::TrackerApp::new(cc)))),
     )
     .unwrap();
