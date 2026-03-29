@@ -26,7 +26,7 @@
 
 use std::sync::Arc;
 
-use crate::xm::{XmEnvelope, XmModule, XmNote, XmSample, SampleLoopType};
+use crate::xm::{SampleLoopType, XmEnvelope, XmModule, XmNote, XmSample};
 
 // ── Public position snapshot ──────────────────────────────────────────────────
 
@@ -281,7 +281,12 @@ impl Player {
 
     /// Snapshot the current sequencer position (for UI display).
     pub fn position(&self) -> PlaybackPosition {
-        let pattern = self.module.pattern_order.get(self.order_pos).copied().unwrap_or(0);
+        let pattern = self
+            .module
+            .pattern_order
+            .get(self.order_pos)
+            .copied()
+            .unwrap_or(0);
         PlaybackPosition {
             order: self.order_pos,
             pattern,
@@ -294,8 +299,7 @@ impl Player {
 
     /// Jump to a specific position in the order list.
     pub fn set_position(&mut self, order: usize, row: usize) {
-        self.order_pos = order
-            .min((self.module.song_length as usize).saturating_sub(1));
+        self.order_pos = order.min((self.module.song_length as usize).saturating_sub(1));
         self.row = row;
         self.tick = 0;
         self.tick_acc = self.samples_per_tick;
@@ -479,8 +483,7 @@ impl Player {
 
                 if sample_idx < instr.samples.len() {
                     let sample = &instr.samples[sample_idx];
-                    let real_pitch =
-                        note_to_pitch(note_val, sample.relative_note, sample.finetune);
+                    let real_pitch = note_to_pitch(note_val, sample.relative_note, sample.finetune);
                     let default_vol = sample.volume as f32 / 64.0;
                     let default_pan = sample.panning as f32 / 255.0;
                     let inc = pitch_to_increment(real_pitch, self.sample_rate);
@@ -541,14 +544,12 @@ impl Player {
             0x80..=0x8F => {
                 // Fine volume slide down (once, at row start).
                 let amt = (vol_col & 0x0F) as f32 / 64.0;
-                self.channels[ch_idx].base_vol =
-                    (self.channels[ch_idx].base_vol - amt).max(0.0);
+                self.channels[ch_idx].base_vol = (self.channels[ch_idx].base_vol - amt).max(0.0);
             }
             0x90..=0x9F => {
                 // Fine volume slide up (once, at row start).
                 let amt = (vol_col & 0x0F) as f32 / 64.0;
-                self.channels[ch_idx].base_vol =
-                    (self.channels[ch_idx].base_vol + amt).min(1.0);
+                self.channels[ch_idx].base_vol = (self.channels[ch_idx].base_vol + amt).min(1.0);
             }
             0xA0..=0xAF => {
                 // Set vibrato speed.
@@ -1213,20 +1214,29 @@ mod tests {
         let pitch = note_to_pitch(61, 0, 0);
         assert!((pitch - 60.0).abs() < 1e-10, "C-5 should be pitch 60.0");
         let freq = pitch_to_freq(pitch);
-        assert!((freq - 8363.0).abs() < 0.01, "C-5 should be 8363 Hz, got {freq}");
+        assert!(
+            (freq - 8363.0).abs() < 0.01,
+            "C-5 should be 8363 Hz, got {freq}"
+        );
     }
 
     #[test]
     fn c4_is_half_c5() {
         // C-4 = note 49, one octave below C-5.
         let freq = pitch_to_freq(note_to_pitch(49, 0, 0));
-        assert!((freq - 4181.5).abs() < 0.1, "C-4 should be ~4181.5 Hz, got {freq}");
+        assert!(
+            (freq - 4181.5).abs() < 0.1,
+            "C-4 should be ~4181.5 Hz, got {freq}"
+        );
     }
 
     #[test]
     fn c6_is_double_c5() {
         let freq = pitch_to_freq(note_to_pitch(73, 0, 0));
-        assert!((freq - 8363.0 * 2.0).abs() < 0.1, "C-6 should be ~16726 Hz, got {freq}");
+        assert!(
+            (freq - 8363.0 * 2.0).abs() < 0.1,
+            "C-6 should be ~16726 Hz, got {freq}"
+        );
     }
 
     #[test]
@@ -1394,7 +1404,10 @@ mod tests {
     fn vibrato_lfo_stays_in_range() {
         for phase in 0u8..64 {
             let v = vibrato_lfo(phase);
-            assert!(v.abs() <= 1.0 + f64::EPSILON, "lfo({phase}) = {v} out of range");
+            assert!(
+                v.abs() <= 1.0 + f64::EPSILON,
+                "lfo({phase}) = {v} out of range"
+            );
         }
         // Phase 0 → sin(0) = 0.
         assert_eq!(vibrato_lfo(0), 0.0);
@@ -1481,7 +1494,7 @@ mod tests {
         row0[0] = XmCell {
             note: XmNote::On(61), // C-5 (1-indexed)
             instrument: 1,
-            volume: 0x50,         // set volume = 64 (max)
+            volume: 0x50, // set volume = 64 (max)
             effect: 0,
             effect_param: 0,
         };

@@ -26,8 +26,8 @@ use std::io::Cursor;
 use anyhow::{Context as _, bail};
 
 use crate::xm::{
-    EnvelopePoint, SampleLoopType, XmCell, XmEnvelope, XmInstrument, XmModule, XmNote,
-    XmPattern, XmSample,
+    EnvelopePoint, SampleLoopType, XmCell, XmEnvelope, XmInstrument, XmModule, XmNote, XmPattern,
+    XmSample,
 };
 
 // ── Public entry point ────────────────────────────────────────────────────────
@@ -154,10 +154,7 @@ fn parse_inner(r: &mut Cursor<&[u8]>) -> anyhow::Result<XmModule> {
         // Read raw 8-bit signed PCM and left-shift to 16-bit.
         let end = (sample_offset + byte_len).min(data.len());
         let raw_bytes = &data[sample_offset..end];
-        let pcm16: Vec<i16> = raw_bytes
-            .iter()
-            .map(|&b| (b as i8 as i16) << 8)
-            .collect();
+        let pcm16: Vec<i16> = raw_bytes.iter().map(|&b| (b as i8 as i16) << 8).collect();
         sample_offset += byte_len;
 
         let finetune = nibble_finetune(raw.finetune_nibble);
@@ -288,7 +285,9 @@ fn map_effect(effect: u8) -> u8 {
 /// Read a null-padded ASCII string from a fixed-width byte slice.
 fn read_fixed_ascii(bytes: &[u8]) -> String {
     let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
-    String::from_utf8_lossy(&bytes[..end]).trim_end().to_string()
+    String::from_utf8_lossy(&bytes[..end])
+        .trim_end()
+        .to_string()
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -312,7 +311,11 @@ mod tests {
         // Halving the period doubles the frequency → one octave up (12 semitones).
         let n_lo = period_to_xm_note(856) as i32;
         let n_hi = period_to_xm_note(428) as i32;
-        assert_eq!(n_hi - n_lo, 12, "halving period should raise note by 12 semitones");
+        assert_eq!(
+            n_hi - n_lo,
+            12,
+            "halving period should raise note by 12 semitones"
+        );
     }
 
     #[test]

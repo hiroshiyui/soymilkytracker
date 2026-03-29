@@ -150,10 +150,10 @@ struct WaveHdr {
     loop_start: u32,
     loop_end: u32,
     sample_rate: u16,
-    low_freq: u32,    // millihertz
-    high_freq: u32,   // millihertz
-    root_freq: u32,   // millihertz
-    panning: u8,      // 0–15
+    low_freq: u32,  // millihertz
+    high_freq: u32, // millihertz
+    root_freq: u32, // millihertz
+    panning: u8,    // 0–15
     mode: u8,
     _scale_freq: i16,
     _scale_factor: u16,
@@ -322,7 +322,10 @@ mod tests {
         let instr = parse(&data).unwrap();
         let n = instr.samples.len() as u8;
         for (i, &s) in instr.note_to_sample.iter().enumerate() {
-            assert!(s < n, "note {i} maps to sample {s}, but only {n} samples exist");
+            assert!(
+                s < n,
+                "note {i} maps to sample {s}, but only {n} samples exist"
+            );
         }
     }
 

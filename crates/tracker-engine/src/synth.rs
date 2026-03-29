@@ -24,8 +24,7 @@ use oxisynth::{MidiEvent, SoundFont, Synth, SynthDescriptor};
 // ── Embedded soundfont bytes ──────────────────────────────────────────────────
 
 /// Open8bitVChiptuner — 92 KB, embedded on all targets.
-const CHIPTUNE_SF2: &[u8] =
-    include_bytes!("../../../assets/soundfonts/Open8bitVChiptuner.sf2");
+const CHIPTUNE_SF2: &[u8] = include_bytes!("../../../assets/soundfonts/Open8bitVChiptuner.sf2");
 
 /// TimGM6mb — 5.7 MB, embedded on native only (too large for WASM).
 #[cfg(not(target_arch = "wasm32"))]
@@ -122,7 +121,10 @@ impl SfSynth {
     /// Select a General MIDI program on the given channel.
     pub fn program_change(&mut self, channel: u8, program_id: u8) -> anyhow::Result<()> {
         self.synth
-            .send_event(MidiEvent::ProgramChange { channel, program_id })
+            .send_event(MidiEvent::ProgramChange {
+                channel,
+                program_id,
+            })
             .map_err(|e| anyhow::anyhow!("ProgramChange: {e:?}"))
     }
 
@@ -130,7 +132,9 @@ impl SfSynth {
     pub fn all_notes_off(&mut self) {
         for ch in 0..16u8 {
             for key in 0..128u8 {
-                let _ = self.synth.send_event(MidiEvent::NoteOff { channel: ch, key });
+                let _ = self
+                    .synth
+                    .send_event(MidiEvent::NoteOff { channel: ch, key });
             }
         }
     }
@@ -189,7 +193,10 @@ mod tests {
         sf.fill(&mut buf);
         sf.note_off(0, 60).unwrap();
         // At least some output should be non-zero after a note-on.
-        assert!(buf.iter().any(|&x| x != 0.0), "expected non-silent output after note-on");
+        assert!(
+            buf.iter().any(|&x| x != 0.0),
+            "expected non-silent output after note-on"
+        );
     }
 
     #[cfg(not(target_arch = "wasm32"))]
