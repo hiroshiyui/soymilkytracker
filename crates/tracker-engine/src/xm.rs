@@ -22,7 +22,7 @@ use anyhow::bail;
 // ── Public types ─────────────────────────────────────────────────────────────
 
 /// A fully-parsed XM module.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct XmModule {
     /// Module title (up to 20 characters).
     pub name: String,
@@ -51,13 +51,13 @@ pub struct XmModule {
 }
 
 /// One pattern: a rectangular grid of cells addressed as `rows[row][channel]`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct XmPattern {
     pub rows: Vec<Vec<XmCell>>,
 }
 
 /// A single cell in the pattern editor grid.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct XmCell {
     /// Note (None if the column is empty).
     pub note: XmNote,
@@ -85,7 +85,7 @@ pub enum XmNote {
 }
 
 /// One instrument, which owns zero or more samples.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct XmInstrument {
     pub name: String,
     /// Maps each of the 96 semitones (C-0 … B-7) to a 0-based sample index.
@@ -102,7 +102,7 @@ pub struct XmInstrument {
 }
 
 /// Volume or panning envelope with up to 12 breakpoints.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct XmEnvelope {
     /// Up to 12 (tick, value) breakpoints.
     pub points: Vec<EnvelopePoint>,
@@ -118,14 +118,14 @@ pub struct XmEnvelope {
 }
 
 /// One breakpoint of an [`XmEnvelope`]: time in ticks + value (0–64).
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EnvelopePoint {
     pub tick: u16,
     pub value: u16,
 }
 
 /// A single sample within an instrument.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct XmSample {
     pub name: String,
     /// Loop start in sample frames.
