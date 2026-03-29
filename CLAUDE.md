@@ -43,6 +43,16 @@ the egui family name `"tracker"` (constant `FONT_TRACKER`) and sets it as the de
 Proportional and Monospace families. Call once in `TrackerApp::new`. Use
 `FontId::new(8.0, FontFamily::Name("tracker".into()))` for pixel-exact 8 px rendering.
 
+**Pattern editor widget (`tracker-client`):**
+`crates/tracker-client/src/pattern_editor.rs` — `PatternEditor` is the main egui widget.
+
+- `PatternEditor::show(&mut self, ui, &mut XmPattern)` — call each frame; processes input then paints the grid. Takes `&mut XmPattern` so keyboard entry can write cells in-place before rendering.
+- `PatternEditor` fields: `cursor_row`, `cursor_channel`, `cursor_col: SubCol`, `record_mode`, `octave: u8` (default 4), `step: usize` (default 1).
+- `SubCol` enum — one of `Note | InsHi | InsLo | VolHi | VolLo | FxLtr | OpHi | OpLo`; drives cursor position, width, and key dispatch.
+- **Keyboard entry**: QWERTY piano layout (MilkyTracker convention); `qwerty_to_note(key, octave)` maps Z-row = base octave, Q-row = octave+1, upper overflow = octave+2. `key_to_hex_nibble(key)` maps 0–9 / A–F for instrument/volume/effect columns. `Num1` = key-off (`XmNote::Off`), `Delete` = clear cell. Cursor auto-advances by `step` rows after entry.
+- XM notes are **1-indexed**: `note = octave * 12 + semitone + 1` (range 1–96).
+- `FontFamily::Name("tracker")` must be explicitly registered in the `families` map (not just `font_data`) — `install_fonts()` handles this; omitting it causes a runtime panic.
+
 ### Backend
 - **Framework**: Rust + [`axum`](https://github.com/tokio-rs/axum)
 - **Database**: PostgreSQL (user data, composition metadata, playlists)
@@ -136,6 +146,14 @@ trunk serve                # in poc/wasm-audio/, poc/egui-grid/, poc/oxisynth-wa
 
 - When coding, provide sufficient comments to help other developers understand the logic.
 - **Rust** — `rustfmt` runs automatically on every `*.rs` file after each write or edit. `cargo clippy` must also pass clean.
+
+## After Every Change
+
+1. Update all relevant documentation
+2. Add essential but missing tests to improve test coverage and ensure code quality
+3. check if there is any missing or incomplete test
+4. Remove the finishied tasks from TODOs
+5. When a bug is discovered, **always** check for similar issues across the project after applying the fix
 
 
 ## License

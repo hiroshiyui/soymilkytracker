@@ -23,11 +23,11 @@ correction, note-to-sample map). 45 unit tests passing.
 
 ## Phase 2 — Tracker Editor UI
 
-Done: pixel-art UI mockups (`doc/ui-mockups.md`); IBM EGA 8×8 font vendored
-(`assets/fonts/Ac437_IBM_EGA_8x8.ttf`) and registered in egui via `install_fonts()`.
+Done (2026-03-29): pixel-art UI mockups (`doc/ui-mockups.md`); IBM EGA 8×8 font vendored and
+registered in egui; pattern editor grid (`PatternEditor`, 87 px/channel, MilkyTracker colour
+palette, ScrollArea, click-to-position, navigation keys); QWERTY piano keyboard entry
+(`qwerty_to_note`, `key_to_hex_nibble`, key-off, clear cell, step advance). 17 unit tests.
 
-- [ ] Implement pattern editor grid (note, instrument, volume, effect columns per channel)
-- [ ] Implement keyboard input mapping for note entry (piano-key layout on QWERTY)
 - [ ] Implement instrument list panel
 - [ ] Implement song arranger / order list
 - [ ] Implement sample waveform viewer and basic editor (loop points, trim)

@@ -64,6 +64,8 @@ Early development — **Phase 1 complete, Phase 2 underway**. Not yet usable as 
 - Three vendored soundfonts: `TimGM6mb.sf2` (GM, GPL-2.0+), `MuseScore_General.sf3` (full GM+GS, MIT), `Open8bitVChiptuner.sf2` (chiptune, CC BY-SA 4.0)
 - IBM EGA 8×8 bitmap font (`assets/fonts/Ac437_IBM_EGA_8x8.ttf`, CC BY 4.0) vendored and registered in egui as the primary UI typeface
 - Pixel-art UI mockups (`doc/ui-mockups.md`) — MilkyTracker-faithful wireframes, colour palette, and egui Painter implementation notes for all panels
+- **Pattern editor grid** (`tracker-client::pattern_editor`) — `PatternEditor` egui widget with the full MilkyTracker classic layout: 87 px/channel (Note + Inst + Vol + Fx), per-field semantic colours, beat-row highlighting, cursor-row band, bidirectional scrolling, click-to-position, arrow/Tab/Home/End/PgUp/PgDn keyboard navigation
+- **QWERTY piano keyboard note entry** — MilkyTracker layout (Z-row = base octave, Q-row = octave+1, upper overflow = octave+2); `Num1` = key-off, `Delete` = clear cell; hex-digit entry for instrument/volume/effect; configurable octave and step; 17 unit tests
 - Four confirmed proof-of-concept spikes (WASM AudioWorklet, egui tracker grid, oxisynth SF2 synthesis, cpal native audio)
 
 Contributions and feedback are welcome, but expect significant breaking changes at any stage.

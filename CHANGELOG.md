@@ -11,13 +11,34 @@ All notable changes to this project will be documented in this file.
 
 ### Phase 2 — Tracker Editor UI (in progress)
 
-- Pattern editor grid (note, instrument, volume, effect columns per channel)
-- Keyboard input mapping for note entry
-- Instrument list, song arranger, sample waveform viewer
-- Transport controls, BPM/tempo controls
+#### Done (2026-03-29)
+
+- **Pattern editor grid** (`tracker-client::pattern_editor`)
+  - `PatternEditor` egui widget — 87 px per channel: Note (3 chars) + Inst Hi/Lo + Vol Hi/Lo + Fx letter + Op Hi/Lo, with 1 px separators
+  - 8 px row height matching IBM EGA 8×8 font; 16 px row-number margin; 12 px channel header row
+  - MilkyTracker classic colour palette: per-field semantic colours, beat-row highlighting (every 4th / 8th row), cursor-row band and cursor-cell overlay
+  - Bidirectional `ScrollArea`; scroll-to-cursor on every keyboard navigation move
+  - Navigation: arrow keys (sub-column and row), Tab/Shift-Tab (channel), Home/End, Page Up/Down
+  - Click-to-position cursor with sub-column detection
+  - `SubCol` enum: `Note | InsHi | InsLo | VolHi | VolLo | FxLtr | OpHi | OpLo`
+
+- **QWERTY piano keyboard note entry** (`tracker-client::pattern_editor`)
+  - `qwerty_to_note(key, octave)` — MilkyTracker layout: Z-row = base octave, Q-row = octave+1, upper overflow = octave+2; clamps to XM range 1–96
+  - `key_to_hex_nibble(key)` — Num0–Num9 and A–F for instrument / volume / effect columns; cursor auto-advances through sub-columns on each digit
+  - `Num1` = key-off (`XmNote::Off`); `Delete` = clear cell; cursor advances by configurable `step` after note entry
+  - `PatternEditor` fields: `octave: u8` (default 4), `step: usize` (default 1); status bar shows current `Oct` and `Stp`
+  - 17 unit tests total in `tracker-client`
+
+#### Planned
+
+- Instrument list panel
+- Song arranger / order list
+- Sample waveform viewer and basic editor
+- Transport controls (play song, play pattern, record mode)
+- BPM / tempo / speed controls
 - Undo/redo history
 - Custom instrument file upload (SF2, SF3, GUS `.pat`)
-- Keyboard shortcut overlay
+- Keyboard shortcut overlay / help panel
 
 ---
 
